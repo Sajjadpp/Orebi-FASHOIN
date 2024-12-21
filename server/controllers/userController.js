@@ -3,6 +3,8 @@ const createEmail = require('../services/nodemailer')
 const {generateToken} = require("../services/jwt")
 const { OAuth2Client } = require('google-auth-library')
 const bcrypt = require("bcrypt")
+const { default: mongoose } = require("mongoose")
+const Product = require("../models/ProductSchema")
 
 const generateOtp = ()=>{
     const otp = Math.floor(1000 + Math.random() * 9000);
@@ -56,7 +58,8 @@ const verifyOtp = async(req, res) =>{
         let hashPass = await bcrypt.hash(userData.password, 10);
         console.log(hashPass)
         let user = new User({...userData, username: userData.fullName, password: hashPass});
-    
+        
+        user.password = hashPass
         user.save();
         console.log(user)
         let token = generateToken({user: user._id})
@@ -78,18 +81,16 @@ const   verifyUser = async(req, res) =>{
         const {email, password} = req.body
         let userExist = await User.findOne({email: email})
         if(!userExist) return res.status(401).json("user doesnt exist");
-        console.log(userExist.password)
+
         if(userExist && !userExist.password) return res.status(401).json("please login with google")
-        const comparePass = await bcrypt.compare(userExist.password, password)
+        const comparePass = await bcrypt.compare( password, userExist.password)
         if(!comparePass) return res.status(401).json("password not valid")
         
         let token = await generateToken({user: userExist._id});
         delete userExist.password
         const {_id, username} = userExist
         res.cookie("OREBI_TOKEN", token)
-        console.log('wrokgin', userExist)
         let newObj = {...userExist}._doc;
-        console.log(newObj,"working")
         res.status(200).json({message: "login successfully", user:{token, ...newObj}});
     }
     catch(err){
@@ -113,6 +114,8 @@ const verifyGoogleUser = async(req, res)=>{
         console.log(payload)
 
         let user = await User.findOne({email: payload.email});
+
+        if(user && !user.status) return res.status(409).json('user blocked by admin')
         console.log(user)
         if(user){
 
@@ -144,10 +147,59 @@ const verifyGoogleUser = async(req, res)=>{
     }
 }
 
+const relatedProduct = async(req, res)=>{
+
+    try{
+        let {category, thisProduct} = req.query
+        thisProduct = new mongoose.Types.ObjectId(thisProduct)
+        console.log(category, req.query)
+        let relatedProducts = await Product.find({category: category, _id:{$ne:thisProduct}})
+        console.log(relatedProducts)
+        res.json(relatedProducts)
+    }
+    catch(error){
+        console.log(error)
+        res.status(500).json('error occured')
+    }
+}
+
+const listAllProducts = async(req, res) =>{
+
+    try{
+        let product = await Product.find({status:true});
+        res.json(product)
+    }
+    catch(error){
+        console.log(error)
+        res.status(500).json(error.message || "server issue")
+    }
+}
+
+
+const listCategory =async(req, res) =>{
+    console.log("listCategory")
+    let categoryName = req.query.category
+    console.log(categoryName)
+    try{
+        const parentCategory = await Category.findOne({name: categoryName})
+        console.log(parentCategory)
+        const categoryList = await Category.find({_id: parentCategory._id})
+        res.json(categoryList)
+
+    }
+    catch(error){
+        res.status(500).json(error.message)
+        console.log(error)
+    }
+}
+
 module.exports= {
     emailExist,
     sentOtp,
     verifyOtp,
     verifyUser,
-    verifyGoogleUser
+    verifyGoogleUser,
+    relatedProduct,
+    listAllProducts,
+    listCategory
 } 

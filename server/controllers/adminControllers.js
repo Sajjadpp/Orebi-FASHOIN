@@ -3,7 +3,8 @@ const admin = require("../models/adminSchema");
 const Category = require('../models/CategorySchema')
 const bcrypt = require("bcrypt")
 const Product = require("../models/ProductSchema")
-const Users = require("../models/userSchema")
+const Users = require("../models/userSchema");
+const { generateToken } = require("../services/jwt");
 const adminLogin= async(req, res)=>{
 
     try{
@@ -17,8 +18,10 @@ const adminLogin= async(req, res)=>{
         const comparePass = await bcrypt.compare(password, userExist.password);
 
         if(!comparePass) return res.status(401).json('password not match')
-
-        res.json('admin loggined successfull');
+        
+        let token = await generateToken({userExist})
+        res.cookie("OREBI_TOKEN_admin",token, {maxAge: 1000*60*60*24})
+        res.json({message: 'admin loggined successfull', token});
     }
     catch(error){
         console.log(error)
@@ -32,7 +35,7 @@ const addCategory=async (req, res) =>{
         let {name, description, parentCategory} = req.body
 
         let categoryExist = await Category.findOne({name})
-        if(categoryExist) return res.status(409).json("category already ecist");
+        if(categoryExist) return res.status(409).json("category already exist");
 
         if(parentCategory) req.parentCategory = new mongoose.Types.ObjectId(parentCategory)
         console.log(parentCategory)
@@ -47,6 +50,7 @@ const addCategory=async (req, res) =>{
     }
 }
 
+
 const listCategory =async(req, res) =>{
     console.log("listCategory")
     try{
@@ -59,6 +63,7 @@ const listCategory =async(req, res) =>{
               as: "subCategories"
             }}
         ])
+        console.log("working")
         res.json(categoryList)
 
     }
@@ -67,7 +72,6 @@ const listCategory =async(req, res) =>{
         console.log(error)
     }
 }
-
 const editCategory = async(req, res) =>{
     const {name, description, id} = req.body;
     let ObjectId = new mongoose.Types.ObjectId(id)
@@ -124,7 +128,7 @@ const productList = async(req, res) =>{
 
 
 const editProduct = async(req, res) =>{
-    console.log(req.body)
+
     let productId = new mongoose.Types.ObjectId(req.body._id)
     try{
         let productEdit = await Product.updateOne({_id: productId},{
@@ -167,12 +171,38 @@ const listAllUsers=async(req, res)=>{
 }
 
 
-const toogleBlock=(req, res) =>{
+const toogleBlock=async(req, res) =>{
 
     try{
-        let userId = mongoose.Types.ObjectId(req.params.id);
+        console.log(req.query.id)
+        let userId = new mongoose.Types.ObjectId(req.query.id);
+        let blockStatus = req.query.blockStatus
+        console.log(blockStatus)
+        let status = blockStatus !== "true"
         
-        Users.updateOne({_id: userId},{$set:{}})
+        let update = await Users.updateOne({_id: userId},{$set:{status:status}})
+        console.log(update)
+        res.json(`user ${status ? "unblocked" : "blocked"} successfully`)
+    }
+    catch(error){
+        console.log(error)
+        res.status(500).json("server error")
+    }
+}
+
+
+const toogleProduct = async(req, res)=>{
+
+    try{
+        let {productId, productStatus} = req.query;
+        productId = new mongoose.Types.ObjectId(productId)
+        productStatus = productStatus !== "true"
+        await Product.updateOne({_id: productId},{$set:{status:productStatus}})
+        res.json(`product ${!productStatus? "de" : ""}activated successfully`)
+    }
+    catch(error){
+        console.log(error);
+        res.status(500).json("server error")
     }
 }
 
@@ -185,5 +215,7 @@ module.exports = {
     productList,
     editProduct,
     listAll,
-    listAllUsers
+    listAllUsers,
+    toogleBlock,
+    toogleProduct
 }
