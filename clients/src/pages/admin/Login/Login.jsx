@@ -18,7 +18,7 @@ const AdminLogin = () => {
   // navigation
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const admin = useSelector(state=> state.adminReducer.isAuthenticated)
+  const admin = useSelector(state=> state.adminReducer.token)
   useEffect(()=>{
     if(admin) return navigate('/admin')
   },[admin])

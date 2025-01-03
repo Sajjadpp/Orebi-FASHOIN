@@ -3,12 +3,12 @@ export const validate = (formData, images, setErrors) => {
 
   // Validate productName: should not contain special characters and minimum length 3 (ignoring spaces)
   const namePattern = /^[A-Za-z0-9 ]+$/;
-  if (!formData.productName || formData.productName.length < 3 || !namePattern.test(formData.productName.trim())) {
+  if (!formData.productName || formData.productName.length < 3 ) {
       newErrors.productName = 'Product name must be at least 3 characters long and cannot contain special characters.';
   }
 
   // Validate description: should not contain special characters and minimum length 3 (ignoring spaces)
-  if (!formData.description || formData.description.length < 3 || !namePattern.test(formData.description.trim())) {
+  if (!formData.description || formData.description.length < 3 ) {
       newErrors.description = 'Description must be at least 3 characters long and cannot contain special characters.';
   }
 
@@ -58,7 +58,7 @@ export const validate = (formData, images, setErrors) => {
           newErrors.images = 'Please provide at least one product image.';
       }
   }
-  console.log(newErrors)
+
   setErrors(newErrors);
   return Object.keys(newErrors).length === 0; // If no errors, return true
 };

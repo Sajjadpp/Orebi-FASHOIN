@@ -6,8 +6,10 @@ import { MdOutlineLabelImportant } from "react-icons/md";
 import Image from "../../designLayouts/Image";
 import Badge from "./Badge";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addToCart } from "../../../../redux/orebiSlice";
+import { userAxiosInstance } from "../../../../redux/constants/AxiosInstance";
+import toast from "react-hot-toast";
 
 const Product = (props) => {
   const {
@@ -53,6 +55,17 @@ const Product = (props) => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 7;
   };
+  const user = useSelector(state => state.userReducer.user)
+  const handleAddToCart = async() =>{
+
+    try{
+      let response = await userAxiosInstance.patch('/cart', {productId: _id, userId: user._id})
+      console.log(response.data,'')
+    }
+    catch(error){
+      toast.error(error.response.data || error.message)
+    }
+  }
 
   return (
     <div className="w-full relative group">
@@ -76,19 +89,7 @@ const Product = (props) => {
               </span>
             </li>
             <li
-              onClick={() =>
-                dispatch(
-                  addToCart({
-                    _id,
-                    name,
-                    quantity: 1,
-                    image: images[0],
-                    price: currentPrice,
-                    stock: stock,
-                    category
-                  })
-                )
-              }
+              onClick={handleAddToCart}
               className="text-[#767676] hover:text-primeColor text-sm font-normal border-b-[1px] border-b-gray-200 hover:border-b-primeColor flex items-center justify-end gap-2 hover:cursor-pointer pb-1 duration-300 w-full"
             >
               Add to Cart

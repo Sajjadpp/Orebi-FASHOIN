@@ -11,7 +11,7 @@ import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   // Sample data
-  const admin = useSelector(state => state.adminReducer.isAuthenticated);
+  const admin = useSelector(state => state.adminReducer.token);
   const navigate = useNavigate()
   console.log(admin,"admin")
   useEffect(()=>{

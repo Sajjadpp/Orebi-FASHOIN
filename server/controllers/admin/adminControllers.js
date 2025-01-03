@@ -1,10 +1,11 @@
 const { default: mongoose } = require("mongoose");
-const admin = require("../models/adminSchema");
-const Category = require('../models/CategorySchema')
+const admin = require("../../models/adminSchema");
+const Category = require('../../models/CategorySchema')
 const bcrypt = require("bcrypt")
-const Product = require("../models/ProductSchema")
-const Users = require("../models/userSchema");
-const { generateToken } = require("../services/jwt");
+const Product = require("../../models/ProductSchema")
+const Users = require("../../models/userSchema");
+const Orders = require('../../models/ordersSchema')
+const { generateToken } = require("../../services/jwt");
 const adminLogin= async(req, res)=>{
 
     try{
@@ -32,17 +33,17 @@ const adminLogin= async(req, res)=>{
 const addCategory=async (req, res) =>{
 
     try{
-        let {name, description, parentCategory} = req.body
+      let {name, description, parentCategory} = req.body
+      let regex = new RegExp(`^${name}$`,"i")
+      let categoryExist = await Category.findOne({name: regex})
+      if(categoryExist) return res.status(409).json("category already exist");
+      
+      if(parentCategory) req.parentCategory = new mongoose.Types.ObjectId(parentCategory)
+      console.log(parentCategory)
+      let category = new Category(req.body)
+      await category.save();
 
-        let categoryExist = await Category.findOne({name})
-        if(categoryExist) return res.status(409).json("category already exist");
-
-        if(parentCategory) req.parentCategory = new mongoose.Types.ObjectId(parentCategory)
-        console.log(parentCategory)
-        let category = new Category(req.body)
-        await category.save();
-
-        res.status(200).json("category added successfull")
+      res.status(200).json("category added successfull")
     }
     catch(error){
         console.log(error)
@@ -129,17 +130,15 @@ const productList = async(req, res) =>{
 
 const editProduct = async(req, res) =>{
 
-    let productId = new mongoose.Types.ObjectId(req.body._id)
-    try{
-        let productEdit = await Product.updateOne({_id: productId},{
-            $set:req.body
-        });
-        console.log(await productEdit)
-        res.json("updated successfully")
+    try{    
+        let id = req.body._id
+        id = new mongoose.Types.ObjectId(id)
+        let {productDetails} = req.body;
+        let products = Product.findOneAndUpdate({_id: id},{$set:productDetails})
+        res.json("product updated")
     }
     catch(error){
-        console.log(error)
-        res.status(500).json("server error")
+        res.status(500).messaage('try again later')
     }
 }
 
@@ -206,6 +205,107 @@ const toogleProduct = async(req, res)=>{
     }
 }
 
+const getOrders = async(req, res) =>{
+    try{
+        let orders = await Orders.aggregate([
+            // Existing lookups for user and shipping address
+            {
+              $lookup: {
+                from: "users",
+                localField: "userId",
+                foreignField: "_id",
+                as: 'user'
+              }
+            },
+            {
+              $unwind: "$user"
+            },
+            {
+              $lookup: {
+                from: "addresses",
+                localField: "shippingAddress",
+                foreignField: "_id",
+                as: 'shippingAddress'
+              }
+            },
+            {
+              $unwind: "$shippingAddress"
+            },
+            // New lookup for products
+            {
+              $lookup: {
+                from: "products",
+                let: { items: "$items" },
+                pipeline: [
+                  {
+                    $match: {
+                      $expr: {
+                        $in: ["$_id", "$$items.productId"]
+                      }
+                    }
+                  }
+                ],
+                as: "productDetails"
+              }
+            },
+            // Modify items array to include product details
+            {
+              $addFields: {
+                "items": {
+                  $map: {
+                    input: "$items",
+                    as: "item",
+                    in: {
+                      $mergeObjects: [
+                        "$$item",
+                        {
+                          productDetails: {
+                            $arrayElemAt: [
+                              {
+                                $filter: {
+                                  input: "$productDetails",
+                                  cond: { $eq: ["$$this._id", "$$item.productId"] }
+                                }
+                              },
+                              0
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+        ]);
+        console.log(orders)
+        res.status(200).json(orders)
+    }
+    catch(error){
+        res.status(500).json('server error')
+    }
+}
+
+const updateOrderStatus = async(req,res) =>{
+    const {status} = req.query
+    console.log(req.query)
+    try{
+        let _id = new mongoose.Types.ObjectId(req.query._id)
+        let updateOrder = await Orders.findOne({_id});
+        console.log(updateOrder)
+        updateOrder.orderStatus = status;
+        updateOrder.paymentStatus = status === "Shipped" ? "success" : 'failed';
+        updateOrder.items.map(product => product.status = status)
+        updateOrder.save();
+        console.log(updateOrder)
+        res.json(updateOrder)
+    }
+    catch(error){
+        console.log(error)
+        res.status(500).json("try again");
+    }
+}
+
 module.exports = {
     adminLogin,
     addCategory,
@@ -217,5 +317,7 @@ module.exports = {
     listAll,
     listAllUsers,
     toogleBlock,
-    toogleProduct
+    toogleProduct,
+    getOrders,
+    updateOrderStatus
 }

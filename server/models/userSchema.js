@@ -9,6 +9,8 @@ const userSchema = mongoose.Schema({
     googleId: { default: null, type: String},
     status: {default: true, type: Boolean, required:true},
     profile: {default:null, type: String}
+},{
+    timestamps: true
 })
 
 const UserModel = mongoose.model("user", userSchema);

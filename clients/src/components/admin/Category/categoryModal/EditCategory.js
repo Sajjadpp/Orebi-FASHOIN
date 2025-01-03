@@ -4,7 +4,6 @@ import { validateCategory } from './validation';
 import toast from "react-hot-toast"
 
 const EditCategoryModal = ({ isOpen, onClose, child, parentName}) => {
-  console.log(isOpen)   
   const [isAnimating, setIsAnimating] = useState(false);
   const [formData, setFormData] = useState({
     name: isOpen.name,
@@ -12,7 +11,6 @@ const EditCategoryModal = ({ isOpen, onClose, child, parentName}) => {
   });
 
   useEffect(()=>{
-      console.log(formData)
       setFormData({
         name: isOpen.name,
         description: isOpen.description
@@ -44,7 +42,6 @@ const EditCategoryModal = ({ isOpen, onClose, child, parentName}) => {
         ...formData,
         id: isOpen._id
       })
-      console.log(response)
 
       if(response.status === 200){
         toast.success(response.data)

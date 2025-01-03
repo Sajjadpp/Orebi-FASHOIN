@@ -1,12 +1,12 @@
-const User = require("../models/userSchema")
-const createEmail = require('../services/nodemailer')
-const {generateToken} = require("../services/jwt")
+const User = require("../../models/userSchema")
+const createEmail = require('../../services/nodemailer')
+const {generateToken} = require("../../services/jwt")
 const { OAuth2Client } = require('google-auth-library')
 const bcrypt = require("bcrypt")
 const { default: mongoose } = require("mongoose")
-const Product = require("../models/ProductSchema")
+const Product = require("../../models/ProductSchema")
 
-const generateOtp = ()=>{
+ const generateOtp = ()=>{
     const otp = Math.floor(1000 + Math.random() * 9000);
     console.log(otp)
     return otp
@@ -36,7 +36,7 @@ const sentOtp = async(req, res) =>{
     let {email} = req.body
      try{
         let otp = generateOtp()
-        let response = await createEmail(email, otp)
+        let response = await createEmail(email, otp, true)
         console.log(response,"fdodfj")
         req.session.otp = otp;
         res.json({status: true, message: "otp sent"}).status(200)
@@ -115,14 +115,15 @@ const verifyGoogleUser = async(req, res)=>{
 
         let user = await User.findOne({email: payload.email});
 
-        if(user && !user.status) return res.status(409).json('user blocked by admin')
+        if(user && !user.status) return res.status(403).json('user blocked by admin')
         console.log(user)
         if(user){
 
             user.profile ??= payload.picture; // if profile kept that otherways payload
             user.googleId ??= payload.sub
             await user.save()
-            let token = await generateToken(user._id)
+            let token = await generateToken({user:user._id})
+            res.cookie('ORIBI_TOKEN',token, {maxAge: 1000*60*60*24} )
             responseData ={...user._doc, token}
         }
         else{
@@ -136,9 +137,11 @@ const verifyGoogleUser = async(req, res)=>{
             })
             console.log(newUser)
             await newUser.save()
-            let token = await generateToken(newUser._id)
+            let token = await generateToken({user: newUser._id})
+            res.cookie('ORIBI_TOKEN',token, {maxAge: 1000*60*60*24} )
             responseData = {...newUser._doc, token}
         }
+        
         res.status(200).json({message: "user logined successfully", user: responseData})
     }
     catch(error){
@@ -176,6 +179,7 @@ const listAllProducts = async(req, res) =>{
 }
 
 
+
 const listCategory =async(req, res) =>{
     console.log("listCategory")
     let categoryName = req.query.category
@@ -193,6 +197,40 @@ const listCategory =async(req, res) =>{
     }
 }
 
+
+const updateUser = async(req, res) =>{
+
+    try{
+        const {firstName, lastName, email, mobileNo} = req.body;
+        let username = `${firstName} ${lastName}`
+
+        let user = await User.updateOne({email: email},{username, mobileNo})
+        console.log(user)
+        res.json(username)
+    }
+    catch(error){
+        console.log(error)
+        res.status(500).json('server error')
+    }
+}
+
+
+const resetPassword = async(req, res) =>{
+
+    try{
+        const {email, password} = req.body;
+        console.log(email, password);
+        const hashPass = await bcrypt.hash(password, 10);
+        let user = await User.findOneAndUpdate({email},{$set:{password: hashPass}});
+        res.json('password reseted');
+    }
+    catch(error){
+        console.log(error);
+        res.status(500).json(error)
+    }
+}
+
+
 module.exports= {
     emailExist,
     sentOtp,
@@ -201,5 +239,9 @@ module.exports= {
     verifyGoogleUser,
     relatedProduct,
     listAllProducts,
-    listCategory
+    listCategory,
+    updateUser, 
+    generateOtp,
+    resetPassword,
+ 
 } 

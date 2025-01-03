@@ -1,8 +1,16 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 const BlockedPage = () => {
     const navigate = useNavigate()
+    const user = useSelector(state => state.userReducer.user)
+    useEffect(()=>{
+      if(user && user.status){
+
+        navigate('/')
+      }
+    },[])
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="text-center bg-white p-8 rounded-lg shadow-lg">

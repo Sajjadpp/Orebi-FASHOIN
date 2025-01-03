@@ -3,6 +3,7 @@ import {
   RouterProvider,
   createRoutesFromElements,
   Route,
+  useNavigate,
 } from "react-router-dom";
 
 import About from "./pages/user/About/About";
@@ -30,13 +31,17 @@ import { SidebarContextProvider } from "./context/SideBarContext";
 import AddProduct from "./pages/admin/product/AddProduct";
 import Category from "./pages/admin/Category/Category";
 import AdminProductList from "./pages/admin/product/productList/ProductList";
-import { LoadingContext, LoadingProvider } from "./context/LoadingContext";
-import { useContext } from "react";
+import {  LoadingProvider } from "./context/LoadingContext";
 import UserManagement from "./pages/admin/UserManagement/UserManagement";
 import BlockedPage from "./pages/user/Blocked/Blocked";
+import OrderConfirmation from "./pages/user/OrderCompleted/OrderCompleted";
+import ForgotPassword from "./pages/user/ForgetPassword/ForgetPassword";
+import OrderList from "./pages/admin/Orders/Orders";
+import OrderDetailsPage from "./components/admin/Orders/OrderViewDetails/OrderDetails";
 
 
 
+console.log('form app')
 
 
 
@@ -55,8 +60,10 @@ const router = createBrowserRouter(
         <Route path="/offer" element={<Offer />}></Route>
         <Route path="/product/:_id" element={<ProductDetails />}></Route>
         <Route path="/cart" element={<Cart />}></Route>
-        <Route path="/paymentgateway" element={<Payment />}></Route>
+        <Route path="/payment" element={<Payment />}></Route>
+        <Route path="/forgot-password" element={<ForgotPassword />} />
       </Route>
+      <Route path="/orderCompleted" element={<OrderConfirmation />}></Route>
       <Route path="/signup" element={<SignUp />}></Route>
       <Route path="/signin" element={<SignIn />}></Route>
       <Route path="/verify" element={<Otp/>}/>
@@ -77,8 +84,10 @@ const router = createBrowserRouter(
           <Route element={<EditProduct/>} path="products/edit"></Route>
           <Route element={<Category/>} path="Category"></Route>
           <Route element={<UserManagement/>} path="customers"></Route>
+          <Route element={<OrderList/>} path="orders"></Route>
           
         </Route>
+          <Route element={<OrderDetailsPage/>} path="details"/>
       
         <Route path="admin/login" element={<AdminLogin/>}/>
     </Route>
@@ -86,14 +95,12 @@ const router = createBrowserRouter(
 );
 
 function App() {
-  const hi = useContext(LoadingContext)
-  console.log(hi,"jdj")
+  
   return (
     <div className="font-bodyFont">
       
         <Toaster position="top-right"/>
         <RouterProvider router={router} />
-      
     </div>
   );
 }

@@ -4,7 +4,6 @@ import { validateCategory } from './validation';
 import toast from "react-hot-toast"
 
 const AddCategoryModal = ({ isOpen, onClose, parentName, child }) => {
-  console.log(child, parentName)
   const [isAnimating, setIsAnimating] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -31,12 +30,11 @@ const AddCategoryModal = ({ isOpen, onClose, parentName, child }) => {
     };
 
     try{
-      let response = await adminAxiosInstance.post('/addCategory',{
+      let response = await adminAxiosInstance.post('/category',{
         ...formData,
         parentCategory: child ? parentName : null, 
         type: child ? 1 : 0
       })
-      console.log(response)
 
       if(response.status === 200){
         toast.success(response.data)

@@ -1,13 +1,15 @@
 import React, { useEffect } from 'react';
 import { useState } from 'react';
-import { User, ShoppingBag, MapPin, Wallet, Gift } from 'lucide-react';
+import { User, ShoppingBag, MapPin, Wallet, Gift, KeyIcon} from 'lucide-react';
 import ProfileContent from "../../../components/user/Profile/ProfileContent"
-import OrdersContent from '../../../components/user/Profile/OrdersContent';
-import AddressesContent from '../../../components/user/Profile/AddressesContent';
+import OrdersContent from '../../../components/user/Profile/Order/OrdersContent';
+import AddressesContent from '../../../components/user/Profile/Address/AddressesContent';
 import WalletContent from '../../../components/user/Profile/WalletContent';
 import CouponsContent from '../../../components/user/Profile/CouponsContent';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import ForgotPassword from '../ForgetPassword/ForgetPassword';
+import { userAxiosInstance } from '../../../redux/constants/AxiosInstance';
 
 const ProfileApp = () => {
   const user = useSelector(state=> state.userReducer.user)
@@ -17,13 +19,24 @@ const ProfileApp = () => {
   useEffect(()=>{
     if(!user) return navigate('/')
   },[user, navigate])
-  const [activePage, setActivePage] = useState('profile');
+
+  useEffect(()=>{
+    (async()=>{
+
+      const isBlock = await userAxiosInstance.get('/protected')
+      console.log(isBlock, 'new response')
+    })()
+  })
+
+  const [activePage, setActivePage] = useState(localStorage.getItem('profile_nav') ?? 'profile');
+  localStorage.removeItem('profile_nav')
   const navItems = [
     { id: 'profile', icon: User, label: 'Profile' },
     { id: 'orders', icon: ShoppingBag, label: 'Orders' },
     { id: 'addresses', icon: MapPin, label: 'Addresses' },
     { id: 'wallet', icon: Wallet, label: 'Wallet' },
-    { id: 'coupons', icon: Gift, label: 'Coupons' }
+    { id: 'coupons', icon: Gift, label: 'Coupons'},
+    { id: 'change password', icon: KeyIcon, label: 'change password' }
   ];
 
   const renderContent = () => {
@@ -38,10 +51,16 @@ const ProfileApp = () => {
         return <WalletContent />;
       case 'coupons':
         return <CouponsContent />;
+      case 'change password':
+        return <ForgotPassword/>;
       default:
         return <ProfileContent />;
     }
   };
+  const location = useLocation()
+  useEffect(()=>{
+    console.log(location)
+  })
 
   return (
     <div className="flex min-h-screen bg-gray-50">

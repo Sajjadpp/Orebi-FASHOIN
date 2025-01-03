@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react'
 import { adminAxiosInstance } from '../../../redux/constants/AxiosInstance';
 import toast from 'react-hot-toast';
 import { ThreeDot } from 'react-loading-indicators';
+import Confirm from '../../user/Cart/Confirm';
+import Confirmation from '../../../assets/elements/Confirmation';
 
 
 const UserManagement = () => {
@@ -16,7 +18,7 @@ const UserManagement = () => {
         },
         // Add more sample users as needed
       ]);
-      
+      const [blockPopup,setBlockPopup] = useState(false)
       const handleBlockToggle = async(userId, status) => {
 
         let toogleBlock = await adminAxiosInstance.patch('/toogleBlock',null,{params:{
@@ -24,7 +26,6 @@ const UserManagement = () => {
             blockStatus: status
 
         }})
-        console.log(toogleBlock)
         toast.success(toogleBlock.data)
         setUsers(users.map(user => { 
           if (user._id === userId) {
@@ -32,6 +33,7 @@ const UserManagement = () => {
           }
           return user;
         }));
+        setBlockPopup(false)
       };
       useEffect(()=>{
 
@@ -42,13 +44,22 @@ const UserManagement = () => {
                 setUsers(response.data);
             }
             catch(error){
-                console.log(error);
                 toast.error('server error')
             }
         })()
-      })
+      },[])
       return (
         <div className="w-full max-w-6xl mx-auto p-6">
+          {blockPopup &&
+            <Confirmation
+            buttonText={`${blockPopup.status ? "block" : "unblock"} the user`}
+            data={'are you sure to the user'}
+            isOpen={blockPopup}
+            onClose={()=> setBlockPopup(false)}
+            onConfirm={()=> handleBlockToggle(blockPopup.userId, blockPopup.status)}
+          />
+          }
+          
           <div className="bg-white rounded-lg shadow-lg">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-xl font-semibold text-gray-800">User Management</h2>
@@ -92,7 +103,7 @@ const UserManagement = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
                         <button
-                          onClick={() => handleBlockToggle(user._id, user.status)}
+                          onClick={() => setBlockPopup({userId:user._id, status:user.status})}
                           className={`px-4 py-2 rounded-md text-sm font-medium text-white ${
                             user.status 
                               ? 'bg-red-600 hover:bg-red-700' 

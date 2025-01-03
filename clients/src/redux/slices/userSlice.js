@@ -22,6 +22,9 @@ export const userSlice = createSlice({
 
         logoutUser:(state, action)=>{
             return {...state, user: null, token: null}
+        },
+        updateUser:(state, action) =>{
+            return {...state, user:{...state.user, ...action.payload}}
         }
 
     },
@@ -46,7 +49,8 @@ export const userSlice = createSlice({
 
 export const {
     SaveUser,
-    logoutUser
+    logoutUser,
+    updateUser
 } = userSlice.actions
 
 export default userSlice.reducer

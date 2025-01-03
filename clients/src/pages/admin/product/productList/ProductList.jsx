@@ -5,29 +5,33 @@ import NetworkAlert from '../../../../assets/elements/NetworkAlert';
 import { useNavigate } from 'react-router-dom';
 import EditProductPopup from '../EditProduct/EditProduct';
 import toast from 'react-hot-toast';
+import Confirmation from '../../../../assets/elements/Confirmation';
 
 const AdminProductList = () => {
   const [products, setProducts] = useState([]);
   const [network, setNetwork] = useState(false)
   const [editProduct, setEditedProduct] = useState(false)
+  const [isPopup, setIsPopup] = useState(false);
+
+  const fetchAllProducts = async()=>{
+    try{
+
+        let response = await adminAxiosInstance.get("/productList")
+        setProducts(response.data)
+        
+    }
+    catch(error){
+        console.log(error)
+        setNetwork(true)
+    }
+  }
 
   useEffect(()=>{
 
-      (async()=>{
-        try{
-
-            let response = await adminAxiosInstance.get("/productList")
-            setProducts(response.data)
-            console.log(response.data)
-        }
-        catch(error){
-            console.log(error)
-            setNetwork(true)
-        }
-    })()
+    fetchAllProducts()
   },[])
 
-  const navigate = useNavigate()
+
   const HandleEdit = (product) =>{  
     setEditedProduct(product)
   }
@@ -47,28 +51,38 @@ const AdminProductList = () => {
         return product
       }))
       toast.success(response.data)
+      setIsPopup(false)
     }
     catch(error){
       toast.error(error.respone.data || error.message)
     }
   }
-
+  if(editProduct) return (
+    <EditProductPopup
+      product={editProduct}
+      isOpen={editProduct}
+      onClose={()=> setEditedProduct(false)}
+    />)
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      {/* edit product */}
-      {
-        setEditedProduct &&
-        <EditProductPopup
-          product={editProduct}
-          isOpen={editProduct}
-          onClose={()=> setEditedProduct(false)}
-        />
-      }
-      {/* end edit product */}
+      
         {
             network &&
             <NetworkAlert setNetwork={setNetwork} text="network issue try again later"/>
         }
+
+        {/* start confirmation popup */}
+        
+          {isPopup &&
+            <Confirmation
+            buttonText={`${isPopup.status ? "inactivate" : "activate"} the product`}
+            data={'are you sure to the user'}
+            isOpen={isPopup}
+            onClose={()=> setIsPopup(false)}
+            onConfirm={()=> handleToogleActivation(isPopup.productId, isPopup.status)}
+          />
+          }
+        
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Product Management</h1>
         <button className="bg-green-200 text-green-700 px-4 py-2 rounded-lg font-medium hover:bg-green-300 transition-colors">
@@ -137,7 +151,7 @@ const AdminProductList = () => {
                   <button 
                     className="p-1 hover:bg-gray-100 rounded transition-colors" 
                     title={product.status ? 'Deactivate' : 'Activate'}
-                    onClick={()=> handleToogleActivation(product._id, product.status)}
+                    onClick={()=> setIsPopup({productId:product._id, status:product.status})}
                   >
                     {product.status ? (
                       <XSquare size={18} className="text-red-600" />

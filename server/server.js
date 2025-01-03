@@ -32,3 +32,8 @@ app.use("/api/admin", adminRouter) // creating routes for admin
 app.listen(process.env.PORT, ()=>{
     console.log('connected successfuly')
 })
+
+app.use((req, res, next) => {
+    console.log(`Incoming Request: ${req.method} ${req.url}`);
+    next();
+  });

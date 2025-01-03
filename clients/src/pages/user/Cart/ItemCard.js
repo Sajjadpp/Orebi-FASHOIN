@@ -1,45 +1,155 @@
-import React from "react";
-import { ImCross } from "react-icons/im";
-import { useDispatch } from "react-redux";
-import {
-  deleteItem,
-  drecreaseQuantity,
-  increaseQuantity,
-} from "../../../redux/orebiSlice";
+import React, { useEffect, useRef, useState } from "react";
+import { Minus, Plus, Trash2 } from "lucide-react";
+import { userAxiosInstance } from "../../../redux/constants/AxiosInstance";
+import toast from "react-hot-toast";
+import Confirm from "./Confirm";
 
-const ItemCard = ({ item }) => {
-  const dispatch = useDispatch();
+const ItemCard = ({ item: products, onRemove, refreshCart }) => {
+  const [product, setProduct] = useState(products);
+  const [item, setItem] = useState(product.cartItems);
+  const quantityRef = useRef();
+
+  const onUpdateQuantity = async (item, size, updateVal) => {
+    try {
+      if (quantityRef.current.textContent == 1 && updateVal == -1) return;
+
+      await userAxiosInstance.patch('/cart', null, {
+        params: {
+          userId: product.userId,
+          productId: item.productId,
+          size,
+          updateVal,
+          quantity: quantityRef.current.textContent,
+        },
+      });
+
+      toast.success(`Quantity ${updateVal === 1 ? 'increased' : 'decreased'}`);
+      refreshCart(); // Refresh the cart after successful update
+    } catch (error) {
+      console.error(error);
+      toast.error(error.response?.data || 'Failed to update quantity');
+    }
+  };
+
+  const [confirmPopup, setConfirmPopup] = useState(false);
+  const [selectedSize, setSelectedSize] = useState(item?.stocks[0]?.size || '');
+
+  const getCurrentStock = () => {
+    return item.stocks.find(stock => stock.size === selectedSize) || item.stocks[0];
+  };
+
+  const handleSizeChange = (e) => {
+    const newSize = e.target.value;
+    setSelectedSize(newSize);
+    refreshCart(); // Refresh the cart after size change
+  };
+
+  const formatPrice = (price) => {
+    return parseFloat(price).toLocaleString('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2,
+    });
+  };
+
+  const calculateItemTotal = () => {
+    const currentStock = getCurrentStock();
+    return currentStock.quantity * parseFloat(product.productDetails.currentPrice);
+  };
+
+  useEffect(() => {
+    setProduct(products);
+    setItem(products.cartItems);
+  }, [products]);
+
+  const openConfirm = (productId, size) => {
+    setConfirmPopup({ productId, size });
+  };
+  
+  const onSuccess = () => {
+    
+    refreshCart(); // Refresh the cart after a successful operation
+    setSelectedSize(item?.stocks[0]?.size);
+  };
+
   return (
-    <div className="w-full grid grid-cols-5 mb-4 border py-2">
-      <div className="flex col-span-5 mdl:col-span-2 items-center gap-4 ml-4">
-        <ImCross
-          onClick={() => dispatch(deleteItem(item._id))}
-          className="text-primeColor hover:text-red-500 duration-300 cursor-pointer"
+    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+      {confirmPopup && (
+        <Confirm state={confirmPopup} setState={setConfirmPopup} onSuccess={onSuccess} />
+      )}
+      <div className="flex gap-4">
+        <img
+          src={product.productDetails.images[0]}
+          alt={product.productDetails.name}
+          className="w-24 h-24 object-cover rounded"
         />
-        <img className="w-32 h-32" src={item.image} alt="productImage" />
-        <h1 className="font-titleFont font-semibold">{item.name}</h1>
-      </div>
-      <div className="col-span-5 mdl:col-span-3 flex items-center justify-between py-4 mdl:py-0 px-4 mdl:px-0 gap-6 mdl:gap-0">
-        <div className="flex w-1/3 items-center text-lg font-semibold">
-          ${item.price}
-        </div>
-        <div className="w-1/3 flex items-center gap-6 text-lg">
-          <span
-            onClick={() => dispatch(drecreaseQuantity({ _id: item._id }))}
-            className="w-6 h-6 bg-gray-100 text-2xl flex items-center justify-center hover:bg-gray-300 cursor-pointer duration-300 border-[1px] border-gray-300 hover:border-gray-300"
-          >
-            -
-          </span>
-          <p>{item.quantity}</p>
-          <span
-            onClick={() => dispatch(increaseQuantity({ _id: item._id }))}
-            className="w-6 h-6 bg-gray-100 text-2xl flex items-center justify-center hover:bg-gray-300 cursor-pointer duration-300 border-[1px] border-gray-300 hover:border-gray-300"
-          >
-            +
-          </span>
-        </div>
-        <div className="w-1/3 flex items-center font-titleFont font-bold text-lg">
-          <p>${item.quantity * item.price}</p>
+        <div className="flex-grow flex flex-col">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="font-medium text-lg">{product.productDetails.name}</h3>
+              <p className="text-gray-600 mt-1">
+                {formatPrice(product.productDetails.currentPrice)}
+                {product.productDetails.regularPrice !== product.productDetails.currentPrice && (
+                  <span className="line-through text-gray-400 ml-2">
+                    {formatPrice(product.productDetails.regularPrice)}
+                  </span>
+                )}
+              </p>
+            </div>
+            <button
+              onClick={() => openConfirm(item._id, selectedSize)}
+              className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+              aria-label="Remove item"
+            >
+              <Trash2 size={20} />
+            </button>
+          </div>
+          <div className="flex items-center gap-4 mt-4">
+            <div className="flex items-center gap-2">
+              <label htmlFor={`size-${item._id}`} className="text-gray-600">
+                Size:
+              </label>
+              <select
+                id={`size-${item._id}`}
+                value={selectedSize}
+                onChange={handleSizeChange}
+                className="border rounded px-2 py-1 bg-[#f5f5f3]"
+              >
+                {item.stocks.map((stock) => (
+                  <option key={stock._id} value={stock.size}>
+                    {stock.size}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-gray-600">Qty:</label>
+              <div className="flex items-center border rounded bg-[#f5f5f3]">
+                <button
+                  onClick={() => onUpdateQuantity(item, selectedSize, -1)}
+                  className="p-1.5 hover:bg-gray-200 rounded-l"
+                  aria-label="Decrease quantity"
+                >
+                  <Minus size={16} />
+                </button>
+                <span className="px-3" ref={quantityRef}>
+                  {getCurrentStock().quantity}
+                </span>
+                <button
+                  onClick={() => onUpdateQuantity(item, selectedSize, 1)}
+                  className="p-1.5 hover:bg-gray-200 rounded-r"
+                  aria-label="Increase quantity"
+                >
+                  <Plus size={16} />
+                </button>
+              </div>
+            </div>
+            <div className="ml-auto">
+              <p className="font-medium">
+                Total: {formatPrice(calculateItemTotal())}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </div>

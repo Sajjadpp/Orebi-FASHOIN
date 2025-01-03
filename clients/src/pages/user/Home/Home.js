@@ -12,6 +12,7 @@ import VerificationWarning from "../../../assets/elements/VerificationWarning";
 import {GoogleAuth} from '../../../components/user/GoogleAuth/GoogleAuth'
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { userAxiosInstance } from "../../../redux/constants/AxiosInstance";
 
 const Home = () => {
 
@@ -28,7 +29,9 @@ const Home = () => {
     if(!user?.token) return GoogleAuth(dispatch);
 
     setIsUser(user)
-    if(!user?.status){
+    console.log('working')
+    if(user && !user?.status){
+      
       dispatch(logoutUser())
       return navigate('/blocked')
 
@@ -45,6 +48,14 @@ const Home = () => {
     }
   },[warning, dispatch, user])
 
+  useEffect(()=>{
+    if(!isUser) return 
+    let user = userAxiosInstance.get('/protected',{
+      headers:{
+        Authorization: `Barear ${isUser.token}`
+      }
+    })
+  },[isUser])
   
   return (
     <div className="w-full mx-auto">

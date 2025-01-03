@@ -21,7 +21,6 @@ const CategoryList = () => {
         (async()=>{
             try{
                 const response = await adminAxiosInstance.get("/listCategory")
-                console.log(response)
                 setCategories(response.data)
             }
             catch(err){

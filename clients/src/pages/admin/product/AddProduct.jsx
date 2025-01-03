@@ -140,10 +140,8 @@ const AddProduct = () => {
     e.preventDefault();
 
     let isValidate = validate(formData, imagePreviews, setErrors);
-    console.log(isValidate
-
-    )
-    if (!isValidate) return;
+ 
+    if (!isValidate) return toast.error("invalid");
 
     // Check if at least one size has stock
     const hasStock = stockItems.some(item => item.quantity > 0);
@@ -152,7 +150,7 @@ const AddProduct = () => {
         ...prev,
         stock: 'At least one size must have stock quantity'
       }));
-      return console.log("not working");
+      return 
     }
 
     let newFromData = new FormData();
@@ -163,8 +161,9 @@ const AddProduct = () => {
     newFromData.append('quantity', formData.quantity);
     newFromData.append('regularPrice', formData.regularPrice);
     newFromData.append('stock', JSON.stringify(stockItems));
-
+    
     imagePreviews.forEach((img, i) => {
+
       let newImgFile = base64ToFile(img, `image${i}.jpg`);
       newFromData.append("images", newImgFile);
     });
@@ -178,7 +177,7 @@ const AddProduct = () => {
       toast.error(error.response.data || error.message);
       console.log(error)
     }
-  };
+  }
 
   useEffect(() => {
     (async () => {

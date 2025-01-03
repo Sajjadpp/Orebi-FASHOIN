@@ -7,9 +7,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { paginationItems } from "../../../../constants";
 import { logoutUser } from "../../../../redux/slices/userSlice";
+import { userAxiosInstance } from "../../../../redux/constants/AxiosInstance";
+import toast from "react-hot-toast";
 
 const HeaderBottom = () => {
   const products = useSelector((state) => state.orebiReducer.products);
+  const [cartCount, setCartCount] = useState(0)
   const users = useSelector((state) => state.userReducer.user);
   const [show, setShow] = useState(false);
   const [showUser, setShowUser] = useState(false);
@@ -24,6 +27,26 @@ const HeaderBottom = () => {
       }
     });
   }, [show, ref]);
+
+  useEffect(()=>{
+    (async()=>{
+      try{
+        if(!users._id) return
+        console.log(users._id)
+        let response = await userAxiosInstance.get("/cartCount",{
+          params:{
+            userId: users._id
+          }
+        })
+        setCartCount(response.data || 0) 
+      }
+      catch(error){
+        console.log(error)
+        toast.error(error.message);
+      }
+      
+    })()
+  },[users])
 
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredProducts, setFilteredProducts] = useState([]);
@@ -185,7 +208,7 @@ const HeaderBottom = () => {
               <div className="relative">
                 <FaShoppingCart />
                 <span className="absolute font-titleFont top-3 -right-2 text-xs w-4 h-4 flex items-center justify-center rounded-full bg-primeColor text-white">
-                  {products.length > 0 ? products.length : 0}
+                  {cartCount ??  0}
                 </span>
               </div>
             </Link>
