@@ -7,7 +7,8 @@ const Input = ({
   className = "", 
   rows,
   options = [],
-  onError = null
+  onError = null,
+  disabled = false
 }) => {
   const baseInputStyles = "w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500";
   
@@ -44,6 +45,7 @@ const Input = ({
     return (
       <input
         type={type}
+        disabled={disabled}
         value={value}
         onChange={onChange}
         className={`${baseInputStyles} ${className}`}

@@ -10,7 +10,7 @@ import {
 } from "../../../../assets/images/index";
 import SampleNextArrow from "./SampleNextArrow";
 import SamplePrevArrow from "./SamplePrevArrow";
-import { adminAxiosInstance } from "../../../../redux/constants/AxiosInstance";
+import { adminAxiosInstance, userAxiosInstance } from "../../../../redux/constants/AxiosInstance";
 import toast from "react-hot-toast";
 
 
@@ -21,10 +21,8 @@ const NewArrivals = () => {
     (async()=>{
       try{
 
-        let response = await adminAxiosInstance.get('/listAll');
+        let response = await userAxiosInstance.get('/listAllProducts');
         setProducts(response.data);
-        
-        
       }
       catch(error){
         console.log(error)

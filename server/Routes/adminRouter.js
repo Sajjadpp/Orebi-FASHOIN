@@ -1,5 +1,5 @@
 const express = require('express');
-const { adminLogin, addCategory, listCategory , getOrders, editCategory, addProduct, productList, editProduct, listAll, listAllUsers, toogleBlock, toogleProduct, updateOrderStatus } = require('../controllers/admin/adminControllers');
+const { adminLogin, addCategory, listCategory, changeStock , getOrders, editCategory, addProduct, productList, editProduct, listAll, listAllUsers, toogleBlock, toogleProduct, updateOrderStatus } = require('../controllers/admin/adminControllers');
 const admin = express.Router();
 const upload = require("../services/cloudinary");
 const { isAuth } = require('../Auth/adminAuth');
@@ -17,6 +17,7 @@ admin.post('/addProduct', isAuth, upload.array("images", 3),addProduct)
 admin.get("/productList", isAuth, productList)
 
 admin.put('/product', isAuth, editProduct)
+admin.patch('/product', isAuth, changeStock)
 
 admin.get("/listAll",isAuth,  listAll)
 

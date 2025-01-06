@@ -133,7 +133,7 @@ const listOrder = async(req, res) =>{
         let orders = await Order.find({userId}).populate({
             path:'items.productId',
             select: 'name description currentPrice regularPrice images stock category',
-        });
+        }).sort({createdAt:-1});
         console.log(orders,"print")
         res.json(orders)
     }

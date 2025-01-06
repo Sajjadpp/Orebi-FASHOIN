@@ -1,18 +1,25 @@
-import axios from "axios";
+import axios from 'axios';  
+import { toast } from 'react-hot-toast';
 
-const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload';
-const CLOUDINARY_UPLOAD_PRESET = 'ml_default';
+const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dnmkzc4lh/image/upload';
+const UPLOAD_PRESET = 'ml_default';
 
-export const uploadToCloudinary = async (file) => {
+export const uploadImage = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-  formData.append('folder', 'products');
-  
+  formData.append('upload_preset', UPLOAD_PRESET);
+
   try {
-    const response = await axios.post(CLOUDINARY_URL, formData);
-    return response.data.secure_url;
+    const response = await axios.post(CLOUDINARY_URL, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    console.log('Upload successful:', response.data);
+    return response.data;
   } catch (error) {
-    throw new Error('Failed to upload image to Cloudinary');
+    toast.error(`Error while uploading image: ${error.message}`);
+    console.error('Upload failed:', error);
+    return null;
   }
 };

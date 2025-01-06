@@ -1,23 +1,30 @@
 const express = require("express")
 const app = express();
 const cors = require('cors')
-const connection = require("./config/connection")
+const connection = require("./config/connection");
+const socketSetUp = require("./services/SOCKET/socket")
 require("dotenv").config()
 const session = require('express-session')
+const http = require('http')
 
+const socketServer = http.createServer(app)
 
 const userRouter = require("./Routes/userRouter");
 const adminRouter = require("./Routes/adminRouter")
 
-connection()
+connection();
+
+
+
 
 app.use(express.json({limit: '10mb'}));
 app.use(express.urlencoded({extended: true , limit: "10mb"}))
 app.use(cors({
-    origin: "http://localhost:3000", // setting cors to connect to client
+    origin: process.env.CLIENT_PORT, // setting cors to connect to client
     credentials: true
 }))
 
+socketSetUp(socketServer)
 
 app.use(session({
     secret: "key",
@@ -32,6 +39,10 @@ app.use("/api/admin", adminRouter) // creating routes for admin
 app.listen(process.env.PORT, ()=>{
     console.log('connected successfuly')
 })
+
+socketServer.listen(3009, () => {
+    console.log(`Server running on port ${process.env.PORT}`);
+});
 
 app.use((req, res, next) => {
     console.log(`Incoming Request: ${req.method} ${req.url}`);

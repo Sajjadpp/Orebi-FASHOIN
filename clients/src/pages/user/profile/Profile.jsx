@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useState } from 'react';
-import { User, ShoppingBag, MapPin, Wallet, Gift, KeyIcon} from 'lucide-react';
+import { User, ShoppingBag, MapPin, Wallet, Gift, KeyIcon , MessageCircle} from 'lucide-react';
 import ProfileContent from "../../../components/user/Profile/ProfileContent"
 import OrdersContent from '../../../components/user/Profile/Order/OrdersContent';
 import AddressesContent from '../../../components/user/Profile/Address/AddressesContent';
@@ -36,7 +36,8 @@ const ProfileApp = () => {
     { id: 'addresses', icon: MapPin, label: 'Addresses' },
     { id: 'wallet', icon: Wallet, label: 'Wallet' },
     { id: 'coupons', icon: Gift, label: 'Coupons'},
-    { id: 'change password', icon: KeyIcon, label: 'change password' }
+    { id: 'change password', icon: KeyIcon, label: 'change password' },
+    
   ];
 
   const renderContent = () => {

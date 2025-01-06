@@ -4,6 +4,7 @@ import { Outlet } from "react-router-dom";
 import Sidebar from "../components/admin/Dashboard/Sidebar/SideBar";
 import { useContext } from "react";
 import { SidebarContext } from "../context/SideBarContext";
+import ChatPopup from "../components/admin/Chat/Chat";
 
 const AdminLayout = () => {
     const {isToogle} = useContext(SidebarContext)
@@ -24,6 +25,7 @@ const AdminLayout = () => {
         {/* Main Content Area */}
         <main className="flex-1 p-4 overflow-auto bg-gray-50">
           <Outlet />
+          <ChatPopup/>
         </main>
       </div>
     </div>

@@ -128,19 +128,28 @@ const productList = async(req, res) =>{
 }   
 
 
-const editProduct = async(req, res) =>{
+const editProduct = async (req, res) => {
+  try {
+    const { _id, ...productDetails } = req.body;
+    console.log(_id)
+    // Log product details for debugging
+    console.log(productDetails, "product details");
 
-    try{    
-        let id = req.body._id
-        id = new mongoose.Types.ObjectId(id)
-        let {productDetails} = req.body;
-        let products = Product.findOneAndUpdate({_id: id},{$set:productDetails})
-        res.json("product updated")
-    }
-    catch(error){
-        res.status(500).messaage('try again later')
-    }
-}
+    // Update the product
+    const updatedProduct = await Product.findOneAndUpdate(
+      { _id },
+      { $set: productDetails },
+      { new: true } // Returns the updated document
+    );
+
+    console.log(updatedProduct); // Log updated product for debugging
+    res.json("Product updated successfully");
+  } catch (error) {
+    console.error(error);
+    res.status(500).json("Try again later");
+  }
+};
+
 
 const listAll =async(req, res)=>{
 
@@ -306,6 +315,20 @@ const updateOrderStatus = async(req,res) =>{
     }
 }
 
+const changeStock = async(req, res) =>{
+
+  try{
+    const {stock, _id} = req.body;
+    console.log(stock, _id)
+    const newProduct = await Product.findOneAndUpdate({_id: _id}, {$set:{stock:stock}})
+    res.json('stock updated')
+  }
+  catch(error){
+    console.log(error)
+    res.status(500).json('stock updated')
+
+  }
+}
 module.exports = {
     adminLogin,
     addCategory,
@@ -319,5 +342,6 @@ module.exports = {
     toogleBlock,
     toogleProduct,
     getOrders,
-    updateOrderStatus
+    updateOrderStatus,
+    changeStock
 }

@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { validate } from '../validation';
 import { base64ToFile } from '../../../../services/Base64ToFile';
 import { useNavigate } from "react-router-dom";
-import { uploadToCloudinary } from '../../../../services/CloudinaryImg';
+import { uploadImage, uploadToCloudinary } from '../../../../services/CloudinaryImg';
 
 const EditProducts = ({isOpen, product, onClose}) => {
   const [images, setImages] = useState([null, null, null]);
@@ -33,10 +33,10 @@ const EditProducts = ({isOpen, product, onClose}) => {
   });
   
   const [formData, setFormData] = useState({
+    _id:product._id ?? '',
     productName: product.name ?? '',
     description: product.description ?? '',
-    category: categories?.name,
-    subcategory: subCategorie?.name,
+    category: product.category,
     quantity: product.stock.reduce((sum, item )=> sum+item.quantity,0) ??'',
     regularPrice: product.regularPrice ??'',
     currentPrice: product.currentPrice ??'',
@@ -85,15 +85,12 @@ const EditProducts = ({isOpen, product, onClose}) => {
 
   // Rest of your existing functions remain unchanged
   const handleInputChange = (field) => (e) => {
-    if (!e.target.value && field === "subCategory") return;
+    if (field === "category") return;
     setFormData((prev) => ({
       ...prev,
       [field]: e.target.value,
     }));
-    if (field === "category") {
-      let category = categories.find(item => item.name === e.target.value);
-      setSubCategory(category.subCategories);
-    }
+    
   };
 
   // Image handling functions remain unchanged
@@ -134,58 +131,55 @@ const EditProducts = ({isOpen, product, onClose}) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     let isValidate = validate(formData, imagePreviews, setErrors);
-   
-    if (!isValidate) return toast.error("invalid");
-
+  
+    if (!isValidate) return toast.error("Invalid");
+  
     // Check if at least one size has stock
     const hasStock = stockItems.some(item => item.quantity > 0);
     if (!hasStock) {
       setErrors(prev => ({
         ...prev,
-        stock: 'At least one size must have stock quantity'
+        stock: 'At least one size must have stock quantity',
       }));
-      return 
+      return;
     }
-
-    
-    imagePreviews.forEach(async(img, i) => {
-      
-      if(!img.includes('https://res.cloudinary')){
-        
-        imagePreviews[i] = await uploadToCloudinary(img);
-      }
-    });
-
   
     try {
-      let response = await adminAxiosInstance.put('/product', {...formData, images: imagePreviews});
+      // Upload images asynchronously
+      const newImageReview = await Promise.all(
+        imagePreviews.map(async (img) => {
+          if (!img.includes('https://res.cloudinary')) {
+            const uploadResult = await uploadImage(img); // Ensure uploadImage resolves
+            return uploadResult?.secure_url; // Use optional chaining to avoid undefined errors
+          }
+          return img;
+        })
+      );
+  
+      console.log(newImageReview, formData);
+      
+      // Submit the form data
+      let response = await adminAxiosInstance.put(
+        '/product',
+        { ...formData , images: newImageReview, stock: stockItems},
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        }
+      );
       toast.success(response.data);
-      navigate('/admin')
-    }
-    catch (error) {
-      toast.error(error.response.data || error.message);
-      console.log(error)
+      navigate('/admin');
+    } catch (error) {
+      toast.error(error.response?.data || error.message);
+      console.error(error);
     }
   };
+  
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const categoryList = (await adminAxiosInstance.get("/listCategory")).data;
-        console.log(categoryList, "server response")
-
-        setSubCategory(categoryList.find(cat => cat.subCategories.filter(subCat => console.log(subCat))))
-        console.log(subCategorie, 'sub categorie')
-        setCategory(categoryList.filter(cat => cat._id == subCategorie.parentCategorie))
-        console.log(categories," categorie")
-      }
-      catch (error) {
-        toast.error(error);
-      }
-    })();
-  }, []);
+  
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
@@ -213,21 +207,23 @@ const EditProducts = ({isOpen, product, onClose}) => {
         <div className="grid grid-cols-2 gap-4">
           <Input
             label="Category"
-            type="select"
             value={formData.category}
             onChange={handleInputChange('category')}
             placeholder="Select Category"
-            options={categories}
+            
           />
+          <div className='hidden'>
 
-          <Input
-            label="Subcategory"
-            type="select"
-            value={formData.subcategory}
-            onChange={handleInputChange('subcategory')}
-            placeholder="Select Subcategory"
-            options={subCategorie}
-          />
+            <Input
+              label="Subcategory"
+              type="select"
+              value={formData.subcategory}
+              onChange={handleInputChange('subcategory')}
+              placeholder="Select Subcategory"
+              options={subCategorie}
+              disabled={'true'}
+              />
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

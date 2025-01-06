@@ -1,5 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Home, Package, ShoppingCart, Users, Settings, ChevronDown, Menu } from 'lucide-react';
+
 import { SidebarContext } from '../../../../context/SideBarContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -48,9 +49,9 @@ const Sidebar = () => {
       path: '/customers'
     },
     {
-      title: 'Settings',
+      title: 'Stock management',
       icon: <Settings className="h-5 w-5" />,
-      path: '/settings'
+      path: '/StockManagement'
     }
   ];
 

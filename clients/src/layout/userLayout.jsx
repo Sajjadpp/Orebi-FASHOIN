@@ -1,3 +1,4 @@
+import ChatPopup from "../components/user/chat/Chat";
 import Footer from "../components/user/home/Footer/Footer";
 import FooterBottom from "../components/user/home/Footer/FooterBottom";
 import Header from "../components/user/home/Header/Header";
@@ -13,6 +14,7 @@ const UserLayout = () => {
         <ScrollRestoration />
         <Outlet />
         <Footer />
+        <ChatPopup/>
         <FooterBottom />
       </div>
     );
