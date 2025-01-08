@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const { default: mongoose } = require('mongoose');
 const User = require('../models/userSchema');
 const {  verifyToken } = require('../services/jwt');
+
 const authenticateToken = (req, res, next) => {
     console.log('eotrking')
     const token = req.headers['authorization']?.split(' ')[1];

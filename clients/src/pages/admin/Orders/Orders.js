@@ -3,6 +3,7 @@ import { adminAxiosInstance } from '../../../redux/constants/AxiosInstance';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import OrderDetailsPage from '../../../components/admin/Orders/OrderViewDetails/OrderDetails';
+import { getStatusColor } from '../../../services/ColorStatus/ColorStatus';
 
 const OrderList = () => {
   // Sample data - replace with your actual data
@@ -27,6 +28,9 @@ const OrderList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 3;
 
+  // color selection 
+  
+  
   // Calculate pagination values
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -48,9 +52,10 @@ const OrderList = () => {
         {
             detailPopup &&
             <OrderDetailsPage
-                isOpen={detailPopup}
-                data={detailPopup}
-                onClose={()=> setDetailPopup(false)}
+              isOpen={detailPopup}
+              data={detailPopup}
+              onClose={()=> setDetailPopup(false)}
+              refresh={fetchOrders}
             />
         }
         <table className="w-full border-collapse bg-white shadow-sm rounded-lg overflow-hidden">
@@ -71,11 +76,7 @@ const OrderList = () => {
               <td className="px-6 py-4 text-sm text-gray-900">{order.user.email}</td>
               <td className="px-6 py-4 text-sm text-gray-900">₹{order.totalAmount}</td>
               <td className="px-6 py-4 text-sm">
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  order.orderStatus === 'active' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-red-100 text-red-800'
-                }`}>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${ getStatusColor(order.orderStatus)}`}>
                   {order.orderStatus}
                 </span>
               </td>

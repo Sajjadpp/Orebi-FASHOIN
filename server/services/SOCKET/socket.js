@@ -26,8 +26,10 @@ const socketSetUp = (server) => {
     socket.on("register", ({ userId, role, name, department }) => {
       if (role === "admin") {
         if (adminId) {
+          console.log('admin entered')
           return socket.emit("error", { message: "Admin is already registered." });
         }
+        console.log('user entered')
         adminId = userId;
       }
 

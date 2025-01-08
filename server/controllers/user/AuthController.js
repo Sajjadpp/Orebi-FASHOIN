@@ -29,9 +29,7 @@ const checkStock = (orderProducts, allProducts) => {
         outOfStockSizes,
       };
     });
-  };
-  
-
+};
 
 const checkProductAvailability = async(req, res) =>{
 
@@ -66,6 +64,7 @@ const forgetPasswordOtp = async(req, res) =>{
   try{
     let otp = generateOtp()
     let createemail = await createEmail(req.body.email, otp, true);
+  
     req.session.otp = otp
     res.json(otp)
   }

@@ -6,6 +6,7 @@ import { FaLessThanEqual } from "react-icons/fa";
 import Confirmation from "../../../../assets/elements/Confirmation";
 import { userAxiosInstance } from "../../../../redux/constants/AxiosInstance";
 import toast from "react-hot-toast";
+import AddressPopup from "../../payment/AddressSection/AddAddress";
 
 const AddressesContent = () => {
   const userId = useSelector(state => state.userReducer.user._id);
@@ -56,6 +57,11 @@ const AddressesContent = () => {
         onConfirm={handleDelete}
         data={'are you sure to delete this address'}
         onClose={()=> setDeletePopup(false)}
+      />
+      <AddressPopup
+        isOpen={addAddressPopup}
+        onClose={()=> setAddAddressPopup(false)}
+        onSubmit={()=> fetchAddress()}
       />
       <h1 className="text-2xl font-bold mb-6">My Addresses</h1>
       <div className="grid grid-cols-2 gap-6">

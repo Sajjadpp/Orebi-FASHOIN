@@ -16,15 +16,34 @@ const ProfileContent = () => {
     lastName: lastName,
     mobileNo: user.mobileNo || null,
   });
-
+  const [userDetails, setUserDetails] = useState(null)
   const [errors, setErrors] = useState({}); // State to store error messages
 
-  const stats = [
-    { label: "Orders", value: "12" },
-    { label: "Wallet", value: "3" },
-    { label: "Points", value: "250" },
-  ];
-  
+  const [stats, setStats] = useState([
+    { label: "Orders", value: userDetails?.OrdersCount ?? 0 },
+    { label: "Wallet", value: userDetails?.AddressCount ?? 0 },
+    { label: "Points", value: userDetails?.points ?? 0 },
+  ]);
+
+  const fetchAddress = async() =>{
+    console.log("fetch address working")
+    try{
+      let response = await userAxiosInstance.get('/profile',{
+        params:{
+          _id: user._id
+        }
+      })
+      console.log(response.data,"prfle thngs");
+      setUserDetails(response.data)
+      console.log(userDetails,"prfle thngs");
+      setStats([])
+    }
+    catch(error){
+      console.log('workinge erroor')
+      console.log(error)
+    }
+  }
+
   const handleSubmit = async() => {
     const validationErrors = userValidation(formData); // Validate the form data
     if (validationErrors) return setErrors(validationErrors); // Set error messages in state
@@ -43,14 +62,19 @@ const ProfileContent = () => {
     
   };
 
+  useEffect(()=>{
+    console.log('working profile useEffect')
+    fetchAddress()
+  },[user])
+
   return (
     <>
       <h1 className="text-2xl font-bold mb-6">Profile Information</h1>
 
-      <div className="grid grid-cols-3 gap-6 mb-8">
-        {stats.map((stat, index) => (
-          <div key={index} className="bg-white p-6 rounded-lg shadow-sm">
-            <div className="text-2xl font-bold">{stat.value}</div>
+      <div className="grid grid-cols-2 gap-6 mb-8">
+        {userDetails?.map((stat, index) => (
+          <div key={index} className="bg-white p-6 rounded-lg shadow-sm flex items-center justify-center flex-col">
+            <div className="text-2xl font-bold">{stat.count}</div>
             <div className="text-gray-500 text-sm">{stat.label}</div>
           </div>
         ))}

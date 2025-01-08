@@ -6,7 +6,7 @@ const socketSetUp = require("./services/SOCKET/socket")
 require("dotenv").config()
 const session = require('express-session')
 const http = require('http')
-
+const morgan = require('morgan');
 const socketServer = http.createServer(app)
 
 const userRouter = require("./Routes/userRouter");
@@ -16,7 +16,7 @@ connection();
 
 
 
-
+app.use(morgan("tiny"))
 app.use(express.json({limit: '10mb'}));
 app.use(express.urlencoded({extended: true , limit: "10mb"}))
 app.use(cors({

@@ -1,68 +1,88 @@
+
 import React, { useEffect, useState } from 'react';
-import { adminAxiosInstance, userAxiosInstance } from '../../../../redux/constants/AxiosInstance';
+import { adminAxiosInstance } from '../../../../redux/constants/AxiosInstance';
+import toast from 'react-hot-toast';
 
-const OrderDetailsPage = ({ isOpen, data, onClose }) => {
-  
+const OrderDetailsPage = ({ isOpen, data, onClose, refresh }) => {
+  // Initialize state with the provided data
+  const [orderData, setOrderData] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const [orderData, setOrderData] = useState({data});
-
-  
+  // Status options mapping
   const statusOptions = {
     pending: ["Shipped", "Cancelled"],
-    shipped: ["delivered"],
+    Shipped: ["Out for delivery"],
     cancelled: [],
-    delivered: []
+    delivered: [],
+    "Out for delivery": ['Delivered']
   };
 
-  const [selectedStatus, setSelectedStatus] = useState(orderData.orderStatus);
-  
-console.log(selectedStatus,"selectedStatus")
-  const handleStatusUpdate = async() => {
-    setOrderData(prev => ({
-      ...prev,
-      status: selectedStatus
-    }));
-    let response = await adminAxiosInstance.patch('/orders',null, {
-        params:{
-            status:selectedStatus,
-            _id: orderData._id
+  // Initialize or update state when data prop changes
+  useEffect(() => {
+    if (data) {
+      setOrderData(data);
+      setSelectedStatus(data.orderStatus);
+    }
+  }, [data]);
+
+  const handleStatusUpdate = async () => {
+    if (selectedStatus === orderData.orderStatus) {
+      toast.error('Please select a different status');
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      const response = await adminAxiosInstance.patch('/orders', null, {
+        params: {
+          status: selectedStatus,
+          _id: orderData._id
         }
-    })
+      });
 
-    console.log(`Status updated to: ${selectedStatus}`, response.data);
+      // Update local state only after successful API call
+      setOrderData(prev => ({
+        ...prev,
+        orderStatus: selectedStatus
+      }));
+
+      toast.success(response.data);
+      
+      // Call the refresh function from parent to update the orders list
+      if (refresh) {
+        await refresh();
+      }
+    } catch (error) {
+      toast.error(error?.response?.data ?? 'Error updating status');
+      // Revert selected status on error
+      setSelectedStatus(orderData.orderStatus);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
+  if (!isOpen || !orderData) return null;
 
-  useEffect(()=>{
-    setOrderData(data)
-    setSelectedStatus(data.orderStatus)
-  },[data])
-
-  if (!isOpen || !data) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto">
       <div className="min-h-screen px-4 text-center">
-        {/* Background overlay */}
         <div className="fixed inset-0 transition-opacity" onClick={onClose}>
           <div className="absolute inset-0 bg-black opacity-50"></div>
         </div>
 
-        {/* Modal container */}
         <div className="inline-block w-full max-w-6xl my-8 text-left align-middle transition-all transform bg-gray-50 shadow-xl rounded-lg">
-          {/* Modal header */}
+          {/* Header */}
           <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 rounded-t-lg flex justify-between items-center">
             <h1 className="text-2xl font-bold">Order Details</h1>
-            <button 
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
-            >
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
 
-          {/* Modal content */}
+          {/* Content */}
           <div className="p-6">
             {/* Order Header */}
             <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
@@ -72,32 +92,33 @@ console.log(selectedStatus,"selectedStatus")
                   <p className="text-gray-600">Order Date: {orderData.orderDate}</p>
                 </div>
                 <div className="flex gap-4 items-center">
-                  <select 
+                  <select
                     value={selectedStatus}
-                    onChange={(e) =>{
-                        console.log(e.target.value)
-                        setSelectedStatus(e.target.value)
-                    } }
+                    onChange={(e) => setSelectedStatus(e.target.value)}
                     className="p-2 border rounded-md"
+                    disabled={isUpdating}
                   >
-                    <option value={selectedStatus}>{selectedStatus}</option>
-                    {console.log(statusOptions[orderData.orderStatus])}
-                    {statusOptions[selectedStatus]?.map(status=>{
-                    console.log(status)
-                        return (
-                        <option value={status}>{status}</option>
-                    )})}
+                    <option value={orderData.orderStatus}>{orderData.orderStatus}</option>
+                    {statusOptions[orderData.orderStatus]?.map((status, index) => (
+                      <option key={index} value={status}>{status}</option>
+                    ))}
                   </select>
-                  <button 
+                  <button
                     onClick={handleStatusUpdate}
-                    className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                    disabled={isUpdating || selectedStatus === orderData.orderStatus}
+                    className={`px-4 py-2 rounded-md text-white ${
+                      isUpdating || selectedStatus === orderData.orderStatus
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
                   >
-                    Update Status
+                    {isUpdating ? 'Updating...' : 'Update Status'}
                   </button>
                 </div>
               </div>
             </div>
 
+            {/* Rest of your existing JSX remains the same */}
             {/* Information Cards Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               {/* User Details */}
@@ -117,13 +138,13 @@ console.log(selectedStatus,"selectedStatus")
                   <p><span className="font-medium">Order ID:</span> {orderData.orderId}</p>
                   <p><span className="font-medium">Status:</span> 
                     <span className={`ml-2 px-2 py-1 rounded-full text-xs font-medium
-                      ${orderData.orderStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
-                      ${orderData.orderStatus === 'shipped' ? 'bg-blue-100 text-blue-800' : ''}
-                      ${orderData.orderStatus === 'delivered' ? 'bg-green-100 text-green-800' : ''}
-                      ${orderData.orderStatus === 'cancelled' ? 'bg-red-100 text-red-800' : ''}
+                      ${orderData.orderStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' : ''}
+                      ${orderData.orderStatus === 'Shipped' ? 'bg-blue-100 text-blue-800' : ''}
+                      ${orderData.orderStatus === 'Delivered' ? 'bg-green-100 text-green-800' : ''}
+                      ${orderData.orderStatus === 'Cancelled' ? 'bg-red-100 text-red-800' : ''}
                     `}>
                         
-                      {orderData?.orderStatus ?? 'pending'}
+                      {orderData?.orderStatus}
                     </span>
                   </p>
                   <p><span className="font-medium">Date:</span> {orderData.createdAt}</p>

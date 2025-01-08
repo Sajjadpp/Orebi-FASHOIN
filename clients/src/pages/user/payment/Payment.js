@@ -12,10 +12,8 @@ import NetworkAlert from '../../../assets/elements/NetworkAlert';
 
 
 
-
-
-
 const CheckoutPage = () => {
+
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [addresses, setAddress] = useState([])
@@ -30,6 +28,7 @@ const CheckoutPage = () => {
     console.log(response)
     setAddress(response)
   }
+
   const fetchOrder = async() =>{
     let response = await fetchData('cart', {userId})
     console.log(response,"working")
@@ -65,6 +64,7 @@ const CheckoutPage = () => {
     fetchOrder()
   },[])
 
+  
 
   useEffect(()=>{
     checkProduct()
@@ -76,7 +76,7 @@ const CheckoutPage = () => {
     console.log('Applying coupon:', code);
   };
 
-  const handleCheckout = async() => {
+  const handleCheckout = async(shippingCharge) => {
     if (!selectedAddress) {
       toast.error('Please select a shipping address');
       return;
@@ -95,6 +95,7 @@ const CheckoutPage = () => {
       let response = await userAxiosInstance.post('/order', {
         ...orders, 
         selectedAddress,
+        shippingCharge,
         total
       })
       

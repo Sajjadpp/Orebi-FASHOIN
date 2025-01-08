@@ -2,14 +2,35 @@ import { useEffect, useState } from "react";
 
 const OrderSummary = ({ items, onApplyCoupon, handleCheckout, onTotalChange }) => {
   const [couponCode, setCouponCode] = useState('');
-  console.log(items,"items")
+  const [shippingCharge, setShippingCharge] = useState(0);
   const subtotal = items?.totalAmt;
-  const shipping = 0; // Free shipping
-  const total = subtotal + shipping;
+  const [total, setTotal] = useState(0);
+  
+
+
+
 
   useEffect(()=>{
     onTotalChange(total)
   },[total])
+
+  useEffect(() => {
+    console.log('working 1', items.totalAmt)
+    if (items.totalAmt <= 1000) {
+        console.log('working 2')
+        
+        setShippingCharge(50);
+      } else if (items.totalAmt <= 4000) {
+        setShippingCharge(25);
+        console.log('working 3')
+      } else {
+        console.log('working 4')
+        setShippingCharge(0);
+      }
+      setTotal(subtotal + shippingCharge);
+      console.log(total)
+  },[items]);
+  
   return (
     <div className="bg-white p-6 rounded-lg shadow">
       <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
@@ -38,7 +59,7 @@ const OrderSummary = ({ items, onApplyCoupon, handleCheckout, onTotalChange }) =
         </div>
         <div className="flex justify-between mb-2">
           <span>Shipping</span>
-          <span>{shipping === 0 ? 'Free' : `₹${shipping}`}</span>
+          <span>{!shippingCharge ? 'Free' : `₹${shippingCharge}`}</span>
         </div>
         <div className="flex justify-between font-semibold text-lg mb-6">
           <span>Total</span>
@@ -64,7 +85,7 @@ const OrderSummary = ({ items, onApplyCoupon, handleCheckout, onTotalChange }) =
           </div>
         </div>
 
-        <button onClick={()=> handleCheckout(shipping)} className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+        <button onClick={()=> handleCheckout(shippingCharge)} className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
           Proceed to Checkout
         </button>
       </div>

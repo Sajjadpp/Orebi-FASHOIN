@@ -11,13 +11,12 @@ const ProductAddress = ({product}) => {
     const [selectedSizeQnty, setSelectedSizeQnty] = useState(1)
     
     useEffect(()=>{
-
         setSelectedSizeQnty(product?.stock?.find(item => item.size == selectedSize).quantity)
         console.log(selectedSizeQnty)
     },[selectedSize])
-      const handleAddToCart = async() =>{
+    const handleAddToCart = async() =>{
           
-            
+        if(!user?.token) return toast.error('please login')
           try{
             console.log('woroking')
             if(!selectedSize) return toast.error('select a size')

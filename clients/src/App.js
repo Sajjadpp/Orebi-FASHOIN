@@ -39,11 +39,7 @@ import ForgotPassword from "./pages/user/ForgetPassword/ForgetPassword";
 import OrderList from "./pages/admin/Orders/Orders";
 import OrderDetailsPage from "./components/admin/Orders/OrderViewDetails/OrderDetails";
 import StockList from "./pages/admin/Stock/StockManagement";
-
-
-
-console.log('form app')
-
+import WishlistPage from "./pages/user/WhishList/WishList";
 
 
 const router = createBrowserRouter(
@@ -63,6 +59,7 @@ const router = createBrowserRouter(
         <Route path="/cart" element={<Cart />}></Route>
         <Route path="/payment" element={<Payment />}></Route>
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/wishlist" element={<WishlistPage/>}/>
       </Route>
       <Route path="/orderCompleted" element={<OrderConfirmation />}></Route>
       <Route path="/signup" element={<SignUp />}></Route>

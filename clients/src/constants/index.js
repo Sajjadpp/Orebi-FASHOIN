@@ -38,8 +38,8 @@ export const navBarList = [
   },
   {
     _id: 1005,
-    title: "Journal",
-    link: "/journal",
+    title: "whishlist",
+    link: "/wishList",
   },
 ];
 // // =================== NavBarList End here ======================

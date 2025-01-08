@@ -5,10 +5,12 @@ import { useEffect, useState } from "react";
 import { Clock, CreditCard, Package, Truck } from "lucide-react";
 import { fetchData } from "../../../../services/fetchData/fetchData";
 import toast from "react-hot-toast";
+import OrderAddress from "./OrderAddress";
 
 
 const OrderDetails = ({orders, refresh}) => {
   const [order, setOrder] = useState({})
+  const [addressDetails, setAddressDetails] = useState(false);
 
   const getStatusColor = (status) => {
     const statusColors = {
@@ -31,6 +33,17 @@ const OrderDetails = ({orders, refresh}) => {
       day: 'numeric'
     });
   };
+
+  const fetchAddress = async() =>{
+    try{
+      let response = await fetchData('singleAddress',{addressId:orders.shippingAddress})
+      orders.shippingAddress = response
+    }
+    catch(error){
+      console.log(error)
+      toast.error("try again")
+    }
+  }
 
   const handleCancelOrder = async(product, portion) =>{
     
@@ -57,6 +70,7 @@ const OrderDetails = ({orders, refresh}) => {
   }
 
   useEffect(()=>{
+    fetchAddress()
     setOrder(orders)
     console.log(order,"orders")
   },[orders])
@@ -64,6 +78,11 @@ const OrderDetails = ({orders, refresh}) => {
   if(!order._id) return 
   return(
     <>
+      <OrderAddress
+        isOpen={addressDetails}
+        onClose={()=> setAddressDetails(false)}
+        addressData={orders.shippingAddress}
+      />
       <h1 className="text-2xl font-bold mb-6">My Orders</h1>
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="space-y-4">
@@ -103,8 +122,7 @@ const OrderDetails = ({orders, refresh}) => {
                   <div className="flex justify-between">
                     <h4 className="font-medium">Product Name</h4>
                     <div>
-                    <span className="font-medium">₹{item.price.toFixed(2)}</span>
-                      
+                      <span className="font-medium">₹{item.price.toFixed(2)}</span> 
                     </div>
                   </div>
                   <div className="mt-1 text-sm text-gray-600">
@@ -118,8 +136,8 @@ const OrderDetails = ({orders, refresh}) => {
                     <span className={`text-sm ${getStatusColor(item.status)} px-2 py-2 rounded-full `}>
                       {item.status} 
                     </span>
-                    <button className={`h-[40px] rounded-md px-7 bg-red-200 text-red-700 ${getStatusColor(item.status)}`} onClick={()=> handleCancelOrder(item,"SINGLE")}>
-                      {item.status == 'Pending' ? "Cancell" : item.status}
+                    <button className={`h-[40px] ${item.status != 'Pending' ? "hidden": null} rounded-md px-7 bg-red-200 text-red-700 ${getStatusColor(item.status)}`} onClick={()=> handleCancelOrder(item,"SINGLE")}>
+                      {item.status == 'Pending' ? "Cancell" : null}
                     </button>
                   </div>
                 </div>
@@ -144,7 +162,7 @@ const OrderDetails = ({orders, refresh}) => {
               <Package size={20} className="text-gray-400" />
               <div>
                 <p className="text-sm font-medium">Shipping Address</p>
-                <p className="text-sm text-gray-600">Delivery details here</p>
+                <p className="text-sm text-gray-600" onClick={()=> setAddressDetails(true)}>Delivery details here</p>
               </div>
             </div>
 
@@ -157,9 +175,9 @@ const OrderDetails = ({orders, refresh}) => {
             </div>
           </div>
         </div>
-        <button className="h-[50px] px-4 bg-red-300" onClick={()=> handleCancelOrder('null', 'FULL')}>
+        <button className={`h-[50px] px-4 bg-red-300 ${order.orderStatus !=="Pending"&& 'hidden'}`} onClick={()=> handleCancelOrder('null', 'FULL')}>
             cancell order
-        </button>
+        </button> 
         </div>
       </div>
     </>

@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 
 let ObjectId = mongoose.Schema.ObjectId
-const UserSchema = new mongoose.Schema({
+const categorySchema = new mongoose.Schema({
     name:{required: true, type: String},
     parentCategory:{default: null, required: false, type: ObjectId },   
     type:{required: true, type: String,},
@@ -11,6 +11,6 @@ const UserSchema = new mongoose.Schema({
     timestamps: true
 })
 
-let model = mongoose.model("category", UserSchema)
+let model = mongoose.model("category", categorySchema)
 
 module.exports = model;

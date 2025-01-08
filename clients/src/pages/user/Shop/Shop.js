@@ -1,68 +1,67 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import Product from '../../../components/user/home/Products/Product';
-import { useSelector } from 'react-redux';
-import { fetchData } from '../../../services/fetchData/fetchData';
-
-  
+import axios from 'axios';
+import { Search } from 'lucide-react'; // Import search icon
+import { userAxiosInstance } from '../../../redux/constants/AxiosInstance';
 
 const Shop = () => {
   const [sortBy, setSortBy] = useState('featured');
   const [products, setProducts] = useState([]);
-
-  
-  const fetchProduct = async() =>{
-    let response = await fetchData('listAllProducts', {})
-    console.log(response)
-    setProducts(response)
-  }
-
-  useEffect(()=>{
-    fetchProduct()
-  },[])
+  const [categories, setCategories] = useState(['all']);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
-  const productsPerPage = 3;
-  const [isTransitioning, setIsTransitioning] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('');
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalProducts: 0,
+    productsPerPage: 3
+  });
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Extract unique categories from products
-  const categories = useMemo(() => {
-    const cats = ['all', ...new Set(products.map(p => p.category))];
-    return cats;
-  }, [products]);
+  const fetchProducts = async (params = {}) => {
+    try {
+      const response = await userAxiosInstance.get('/products', {
+        params: {
+          page: params.page || currentPage,
+          limit: 3,
+          sortBy: params.sortBy || sortBy,
+          category: params.category || selectedCategory,
+          search: params.search !== undefined ? params.search : searchQuery
+        }
+      });
 
-  // Filter and sort products
-  const filteredAndSortedProducts = useMemo(() => {
-    let filtered = selectedCategory === 'all' 
-      ? products 
-      : products.filter(p => p.category === selectedCategory);
-
-    switch(sortBy) {
-      case 'price-asc':
-        return filtered.sort((a, b) => a.currentPrice - b.currentPrice);
-      case 'price-desc':
-        return filtered.sort((a, b) => b.currentPrice - a.currentPrice);
-      case 'name-asc':
-        return filtered.sort((a, b) => a.name.localeCompare(b.name));
-      case 'name-desc':
-        return filtered.sort((a, b) => b.name.localeCompare(a.name));
-      case 'new':
-        return filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      default:
-        return filtered;
+      if (response.data.status === 'success') {
+        setProducts(response.data.data.products);
+        setPagination(response.data.data.pagination);
+        setCategories(response.data.data.categories);
+      }
+    } catch (error) {
+      console.error('Error fetching products:', error);
     }
-  }, [products, sortBy, selectedCategory]);
+  };
 
-  // Pagination
-  const totalPages = Math.ceil(filteredAndSortedProducts.length / productsPerPage);
-  const currentProducts = filteredAndSortedProducts.slice(
-    (currentPage - 1) * productsPerPage,
-    currentPage * productsPerPage
-  );
-// Handle page changes with transition
-const handlePageChange = (newPage) => {
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  // Debounce search function
+  let searchTimeout;
+  const handleSearch = (value) => {
+    setSearchQuery(value);
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      setCurrentPage(1);
+      fetchProducts({ search: value, page: 1 });
+    }, 500); // Wait 500ms after user stops typing
+  };
+
+  // Handle page changes with transition
+  const handlePageChange = (newPage) => {
     setIsTransitioning(true);
     setTimeout(() => {
       setCurrentPage(newPage);
+      fetchProducts({ page: newPage });
       setIsTransitioning(false);
     }, 300);
   };
@@ -73,6 +72,7 @@ const handlePageChange = (newPage) => {
     setTimeout(() => {
       setSelectedCategory(category);
       setCurrentPage(1);
+      fetchProducts({ category, page: 1 });
       setIsTransitioning(false);
     }, 300);
   };
@@ -82,6 +82,7 @@ const handlePageChange = (newPage) => {
     setIsTransitioning(true);
     setTimeout(() => {
       setSortBy(newSortBy);
+      fetchProducts({ sortBy: newSortBy, page: 1 });
       setIsTransitioning(false);
     }, 300);
   };
@@ -94,6 +95,21 @@ const handlePageChange = (newPage) => {
           <aside className="md:w-64 flex-shrink-0">
             <div className="sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto">
               <div className="bg-white rounded-lg shadow p-6">
+                {/* Search Section */}
+                <div className="mb-8">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Search Products</h2>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => handleSearch(e.target.value)}
+                      placeholder="Search products..."
+                      className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400 transition-colors duration-200"
+                    />
+                    <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+                  </div>
+                </div>
+
                 {/* Sort Section */}
                 <div className="mb-8">
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Sort By</h2>
@@ -131,7 +147,7 @@ const handlePageChange = (newPage) => {
                   </div>
                 </div>
 
-                {/* Filters remain the same */}
+                {/* Filters Section */}
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Filters</h2>
                   <div className="space-y-3">
@@ -155,20 +171,20 @@ const handlePageChange = (newPage) => {
           <main className="flex-1">
             <div className="bg-white rounded-lg shadow p-6">
               <div className="mb-6 text-gray-600">
-                Showing {currentProducts.length} of {filteredAndSortedProducts.length} products
+                Showing {products.length} of {pagination.totalProducts} products
               </div>
 
               {/* Product Grid with Transition */}
               <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 transition-opacity duration-300 ${
                 isTransitioning ? 'opacity-0' : 'opacity-100'
               }`}>
-                {currentProducts.map((product) => (
+                {products.map((product) => (
                   <Product key={product._id} {...product} />
                 ))}
               </div>
 
-              {/* Pagination with Transitions */}
-              {totalPages > 1 && (
+              {/* Pagination */}
+              {pagination.totalPages > 1 && (
                 <div className="mt-8 flex justify-center gap-2">
                   <button
                     onClick={() => handlePageChange(Math.max(currentPage - 1, 1))}
@@ -181,7 +197,7 @@ const handlePageChange = (newPage) => {
                   >
                     Previous
                   </button>
-                  {[...Array(totalPages)].map((_, idx) => (
+                  {[...Array(pagination.totalPages)].map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => handlePageChange(idx + 1)}
@@ -196,10 +212,10 @@ const handlePageChange = (newPage) => {
                     </button>
                   ))}
                   <button
-                    onClick={() => handlePageChange(Math.min(currentPage + 1, totalPages))}
-                    disabled={currentPage === totalPages || isTransitioning}
+                    onClick={() => handlePageChange(Math.min(currentPage + 1, pagination.totalPages))}
+                    disabled={currentPage === pagination.totalPages || isTransitioning}
                     className={`px-4 py-2 rounded-md transition-all duration-200 ${
-                      currentPage === totalPages || isTransitioning
+                      currentPage === pagination.totalPages || isTransitioning
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                         : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                     }`}

@@ -3,6 +3,7 @@ const Address = require("../../models/addressSchema")
 const Order = require("../../models/ordersSchema")
 const createEmail = require("../../services/nodemailer")
 const Cart = require("../../models/CartSchema")
+const Products = require('../../models/ProductSchema')
 
 const getOrderFormData = (originalData) =>{
     return {
@@ -61,13 +62,41 @@ const listAddress = async(req, res) =>{
     }
 }
 
+const singleAddress = async(req, res) =>{
+
+    try{
+        const address = await Address.findById({_id: req.query.addressId})
+        res.json(address)
+    }
+    catch(error){
+        console.log(error);
+        res.status(500).json('server is busy')
+    }
+}
+
 const addOrder = async(req, res) =>{
     
     try{
+        
         let data = getOrderFormData(req.body)
         let order = new Order(data)
-        console.log("deref",order,"order")
+        console.log("deref",data,"order")
         order.save();
+
+        // Iterate through items in the order to update product stocks
+        for (const item of order.items) {
+            let { productId, stocks } = item;
+            productId = new mongoose.Types.ObjectId(productId)
+            // Loop through the stocks array to update quantities for each size
+            console.log(stocks)
+            for (const stockItem of stocks) {
+                const { size, quantity } = stockItem;
+                await Products.findOneAndUpdate(
+                    { _id: productId, "stock.size": size }, // Match product and size
+                    { $inc: { "stock.$.quantity": -quantity } } // Decrease stock quantity
+                );
+            }
+        }
         let userId = new mongoose.Types.ObjectId(order.userId)
         let deleteCartItems = await Cart.findOneAndUpdate({userId},{$set:{cartItems:[]}})
         console.log(deleteCartItems)
@@ -153,14 +182,23 @@ const cancelOrder = async(req, res) =>{
         if(portion === 'FULL') {
             orders.items.map(item => item.status = 'Cancelled')
             orders.orderStatus = "Cancelled"
+            orders.paymentStatus = "failed"
             return res.json('cancelled the order')
         }
 
         // if one product 
         let cancelproduct  = orders.items.find(item => item.productId == String(new mongoose.Types.ObjectId(productId)))
         cancelproduct.status = 'Cancelled'
+        
+        let totalAmount = orders.items.reduce((sum, val)=>{
+            sum += val.status === "Cancelled" ? 0 : Number(val.total)
+            return sum
+        },0)
+        orders.totalAmount = totalAmount
+
         if(orders.items.every(item => item.status === 'Cancelled')){
             orders.orderStatus = "Cancelled"
+            orders.paymentStatus = "failed"
         }
         orders.save()
 
@@ -172,6 +210,7 @@ const cancelOrder = async(req, res) =>{
     }
 }
 
+
 module.exports = {
     addAddress,
     listAddress,
@@ -180,5 +219,6 @@ module.exports = {
     sendOrderMail,
     listOrder,
     cancelOrder,
-    deleteAddress
+    deleteAddress,
+    singleAddress
 }

@@ -5,6 +5,9 @@ const { OAuth2Client } = require('google-auth-library')
 const bcrypt = require("bcrypt")
 const { default: mongoose } = require("mongoose")
 const Product = require("../../models/ProductSchema")
+const Address = require("../../models/addressSchema")
+const Orders = require('../../models/ordersSchema')
+
 
  const generateOtp = ()=>{
     const otp = Math.floor(1000 + Math.random() * 9000);
@@ -230,6 +233,107 @@ const resetPassword = async(req, res) =>{
     }
 }
 
+const listProfileThings = async(req, res) =>{
+    let { _id } = req.query
+    try{
+        let AddressCount = await Address.find({userId: _id});
+        let OrdersCount = await Orders.find({userId: _id});
+        console.log(AddressCount.length, OrdersCount.length,'count')
+        res.status(200).json([{label: "address", count: AddressCount.length},{label: 'Orders',count: OrdersCount.length}])
+    }
+    catch(error){
+        console.log(error)
+        res.status(500).json('try again later')
+    }
+}
+
+
+const listProductByFilter =  async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 3;
+        const sortBy = req.query.sortBy || 'featured';
+        const category = req.query.category || 'all';
+        const searchQuery = req.query.search || '';
+        
+        // Build query
+        const query = {};
+        
+        // Add category filter
+        if (category !== 'all') {
+            query.category = category;
+        }
+
+        // Add search functionality
+        if (searchQuery) {
+            query.$or = [
+                { name: { $regex: searchQuery, $options: 'i' } },
+                { description: { $regex: searchQuery, $options: 'i' } },
+                { category: { $regex: searchQuery, $options: 'i' } }
+            ];
+        }
+
+        // Build sort configuration
+        let sortConfig = {};
+        switch (sortBy) {
+            case 'price-asc':
+                sortConfig = { currentPrice: 1 };
+                break;
+            case 'price-desc':
+                sortConfig = { currentPrice: -1 };
+                break;
+            case 'name-asc':
+                sortConfig = { name: 1 };
+                break;
+            case 'name-desc':
+                sortConfig = { name: -1 };
+                break;
+            case 'new':
+                sortConfig = { createdAt: -1 };
+                break;
+            default:
+                sortConfig = { featured: -1 };
+        }
+
+        // Calculate skip for pagination
+        const skip = (page - 1) * limit;
+
+        // Get total count of products matching the query
+        const totalProducts = await Product.countDocuments(query);
+
+        // Fetch products with pagination and sorting
+        const products = await Product.find(query)
+            .sort(sortConfig)
+            .skip(skip)
+            .limit(limit);
+
+        // Get unique categories
+        const categories = await Product.distinct('category');
+
+        // Send response
+        res.json({
+            status: 'success',
+            data: {
+                products,
+                pagination: {
+                    currentPage: page,
+                    totalPages: Math.ceil(totalProducts / limit),
+                    totalProducts,
+                    productsPerPage: limit
+                },
+                categories: ['all', ...categories]
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching products:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Error fetching products',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+}
 
 module.exports= {
     emailExist,
@@ -243,5 +347,7 @@ module.exports= {
     updateUser, 
     generateOtp,
     resetPassword,
+    listProfileThings,
+    listProductByFilter
  
 } 

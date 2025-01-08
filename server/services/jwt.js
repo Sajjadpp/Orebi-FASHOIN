@@ -18,7 +18,7 @@ const generateToken =(userData)=>{
 const verifyToken = (token, req) => {
     jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
         if (err) {
-            console.log(err)
+            console.log(err,"err printing")
             return 
         }
         console.log(user,"user side")

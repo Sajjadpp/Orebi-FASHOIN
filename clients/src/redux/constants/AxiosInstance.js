@@ -34,7 +34,6 @@ userAxiosInstance.interceptors.response.use(
                 return store.dispatch(logoutUser()) 
             }
             console.error('You are blocked!');
-            console.log(store.getState().userReducer)
             store.dispatch(updateUser({status:false}))
         }
       return Promise.reject(error);

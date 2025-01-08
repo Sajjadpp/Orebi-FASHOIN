@@ -27,6 +27,7 @@ const Product = (props) => {
   const [currentImage, setCurrentImage] = useState(typeof images === "object" && images[0]);
   const dispatch = useDispatch();
   
+  const user = useSelector(state => state.userReducer.user)
   const idString = (name) => {
     return String(name).toLowerCase().split(" ").join("");
   };
@@ -47,6 +48,23 @@ const Product = (props) => {
     ((regularPrice - currentPrice) / regularPrice) * 100
   );
 
+  const handleAddToWishList = async () =>{
+    console.log('fetch data....')
+    try{
+      let userId = user._id;
+      const response = await userAxiosInstance.put('/wishList', {
+        userId,
+        productId: _id
+      })
+      console.log(response.data)
+      toast.success(response.data);
+    }
+    catch(error){
+      console.log(error);
+      toast.error(error.response.data)
+    }
+  }
+
   // Check if product is new (within 7 days)
   const isNew = () => {
     const productDate = new Date(createdAt);
@@ -55,7 +73,6 @@ const Product = (props) => {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays <= 7;
   };
-  const user = useSelector(state => state.userReducer.user)
   const handleAddToCart = async() =>{
 
     try{
@@ -106,7 +123,7 @@ const Product = (props) => {
                 <MdOutlineLabelImportant />
               </span>
             </li>
-            <li className="text-[#767676] hover:text-primeColor text-sm font-normal border-b-[1px] border-b-gray-200 hover:border-b-primeColor flex items-center justify-end gap-2 hover:cursor-pointer pb-1 duration-300 w-full">
+            <li onClick={handleAddToWishList} className="text-[#767676] hover:text-primeColor text-sm font-normal border-b-[1px] border-b-gray-200 hover:border-b-primeColor flex items-center justify-end gap-2 hover:cursor-pointer pb-1 duration-300 w-full">
               Add to Wish List
               <span>
                 <BsSuitHeartFill />

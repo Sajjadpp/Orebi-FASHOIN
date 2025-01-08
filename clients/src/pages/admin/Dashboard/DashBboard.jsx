@@ -6,6 +6,7 @@ import StatusCard from '../../../components/admin/Dashboard/StatusCardRow/Status
 import SalesStatistics from '../../../components/admin/Dashboard/Chart/SalesStatistics';
 import RevenueArea from '../../../components/admin/Dashboard/Chart/RevenueArea';
 import NewOrders from '../../../components/admin/Dashboard/OrcersAndMembers/NewOrders';
+import NewMember from '../../../components/admin/Dashboard/OrcersAndMembers/NewMembers';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
@@ -37,7 +38,7 @@ const Dashboard = () => {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <NewOrders/>
-        <NewOrders/>
+        <NewMember/>
       </div>
     </div>
   );

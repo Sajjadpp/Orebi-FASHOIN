@@ -1,7 +1,7 @@
 const { default: mongoose } = require("mongoose");
 const Cart = require("../../models/CartSchema")
 const Product = require('../../models/ProductSchema')
-
+const WishList = require('../../models/WishListSchema')
 
 // service
 function totalAmount(cart){
@@ -191,10 +191,94 @@ const deleteCartProducts = async(req, res) =>{
     }
 }
 
+// wishlist things
+
+const listWishlist = async(req, res) =>{
+
+    try{
+        const userId = new mongoose.Types.ObjectId(req.query.userId)
+        const wishList = await WishList.findOne({userId}).populate('products');
+        res.json(wishList)
+    }
+    catch(error){
+        console.log(error);
+        res.status(500).json('server is busy')
+    }
+}
+
+const addWishList = async(req, res) =>{
+
+    try{    
+        const userId = req.body.userId;
+        const productId = req.body.productId
+        
+        if(!userId || !productId) return res.json('product id cant find')
+        
+        let wishList = await WishList.findOne({userId});
+
+        if(wishList){
+            wishList.products.push(productId);
+            wishList.save()
+            return res.json("wishList added")
+        }
+
+        let newWishList = new WishList({
+            userId: userId,
+            products:[productId]
+        })
+
+        newWishList.save()
+        return res.json('wishList added')
+
+    }   
+    catch(error){
+        console.log(error)
+        res.status(500).json('server not responding')
+    }
+}
+
+const removeWishList = async (req, res) => {
+    try {
+        const productId = new mongoose.Types.ObjectId(req.query.productId);
+        const userId = new mongoose.Types.ObjectId(req.query.userId);
+        
+        // Find the user's wishlist document
+        const wishList = await WishList.findOne({ userId });
+
+        if (!wishList) {
+            return res.status(404).json('Wishlist not found' );
+        }
+
+        // Filter out the product to be removed
+        wishList.products = wishList.products.filter(
+            product => String(product) !== String(productId)
+        );
+
+        // If the products array is now empty, delete the wishlist
+        if (!wishList.products.length) {
+            await WishList.deleteOne({ userId });
+            return res.json( 'Product removed and wishlist deleted' );
+        }
+
+        // Otherwise, save the updated wishlist
+        await wishList.save();
+        res.json( 'Product removed from wishlist' );
+    } catch (error) {
+        console.error(error);
+        res.status(500).json('Server not responding');
+    }
+};
+
+
 module.exports = {
     addToCart,
     cartCount,
     listCart,
     updateCount,
-    deleteCartProducts
+    deleteCartProducts,
+
+    //wishList
+    listWishlist,
+    addWishList,
+    removeWishList
 }

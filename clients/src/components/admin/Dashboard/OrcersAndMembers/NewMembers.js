@@ -1,8 +1,9 @@
 import React from 'react'
+import Card from '../Card/Card';
 
 const NewMembers = () => {
     
-    
+
       const newMembers = [
         { id: 1, name: 'John Smith', role: 'Sales Manager', img: '/api/placeholder/40/40' },
         { id: 2, name: 'Emma Wilson', role: 'Developer', img: '/api/placeholder/40/40' },

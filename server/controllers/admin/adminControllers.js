@@ -215,104 +215,104 @@ const toogleProduct = async(req, res)=>{
 }
 
 const getOrders = async(req, res) =>{
-    try{
-        let orders = await Orders.aggregate([
-            // Existing lookups for user and shipping address
-            {
-              $lookup: {
-                from: "users",
-                localField: "userId",
-                foreignField: "_id",
-                as: 'user'
-              }
-            },
-            {
-              $unwind: "$user"
-            },
-            {
-              $lookup: {
-                from: "addresses",
-                localField: "shippingAddress",
-                foreignField: "_id",
-                as: 'shippingAddress'
-              }
-            },
-            {
-              $unwind: "$shippingAddress"
-            },
-            // New lookup for products
-            {
-              $lookup: {
-                from: "products",
-                let: { items: "$items" },
-                pipeline: [
-                  {
-                    $match: {
-                      $expr: {
-                        $in: ["$_id", "$$items.productId"]
-                      }
-                    }
-                  }
-                ],
-                as: "productDetails"
-              }
-            },
-            // Modify items array to include product details
-            {
-              $addFields: {
-                "items": {
-                  $map: {
-                    input: "$items",
-                    as: "item",
-                    in: {
-                      $mergeObjects: [
-                        "$$item",
-                        {
-                          productDetails: {
-                            $arrayElemAt: [
-                              {
-                                $filter: {
-                                  input: "$productDetails",
-                                  cond: { $eq: ["$$this._id", "$$item.productId"] }
-                                }
-                              },
-                              0
-                            ]
-                          }
-                        }
-                      ]
-                    }
+  try{
+    let orders = await Orders.aggregate([
+        // Existing lookups for user and shipping address
+        {
+          $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: 'user'
+          }
+        },
+        {
+          $unwind: "$user"
+        },
+        {
+          $lookup: {
+            from: "addresses",
+            localField: "shippingAddress",
+            foreignField: "_id",
+            as: 'shippingAddress'
+          }
+        },
+        {
+          $unwind: "$shippingAddress"
+        },
+        // New lookup for products
+        {
+          $lookup: {
+            from: "products",
+            let: { items: "$items" },
+            pipeline: [
+              {
+                $match: {
+                  $expr: {
+                    $in: ["$_id", "$$items.productId"]
                   }
                 }
               }
+            ],
+            as: "productDetails"
+          }
+        },
+        // Modify items array to include product details
+        {
+          $addFields: {
+            "items": {
+              $map: {
+                input: "$items",
+                as: "item",
+                in: {
+                  $mergeObjects: [
+                    "$$item",
+                    {
+                      productDetails: {
+                        $arrayElemAt: [
+                          {
+                            $filter: {
+                              input: "$productDetails",
+                              cond: { $eq: ["$$this._id", "$$item.productId"] }
+                            }
+                          },
+                          0
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
             }
-        ]);
-        console.log(orders)
-        res.status(200).json(orders)
-    }
-    catch(error){
-        res.status(500).json('server error')
-    }
+          }
+        }
+    ]);
+    console.log(orders)
+    res.status(200).json(orders.reverse())
+  }
+  catch(error){
+      res.status(500).json('server error')
+  }
 }
 
 const updateOrderStatus = async(req,res) =>{
-    const {status} = req.query
-    console.log(req.query)
-    try{
-        let _id = new mongoose.Types.ObjectId(req.query._id)
-        let updateOrder = await Orders.findOne({_id});
-        console.log(updateOrder)
-        updateOrder.orderStatus = status;
-        updateOrder.paymentStatus = status === "Shipped" ? "success" : 'failed';
-        updateOrder.items.map(product => product.status = status)
-        updateOrder.save();
-        console.log(updateOrder)
-        res.json(updateOrder)
-    }
-    catch(error){
-        console.log(error)
-        res.status(500).json("try again");
-    }
+  const {status} = req.query
+  console.log(req.query)
+  try{
+    let _id = new mongoose.Types.ObjectId(req.query._id)
+    let updateOrder = await Orders.findOne({_id});
+    console.log(updateOrder)
+    updateOrder.orderStatus = status;
+    updateOrder.paymentStatus = status === "Shipped" ? "success" : 'failed';
+    updateOrder.items.map(product => product.status = status)
+    updateOrder.save();
+    console.log(updateOrder)
+    res.json('order updated ')
+  }
+  catch(error){
+    console.log(error)
+    res.status(500).json("try again");
+  }
 }
 
 const changeStock = async(req, res) =>{
@@ -330,18 +330,18 @@ const changeStock = async(req, res) =>{
   }
 }
 module.exports = {
-    adminLogin,
-    addCategory,
-    listCategory,
-    editCategory,
-    addProduct,
-    productList,
-    editProduct,
-    listAll,
-    listAllUsers,
-    toogleBlock,
-    toogleProduct,
-    getOrders,
-    updateOrderStatus,
-    changeStock
+  adminLogin,
+  addCategory,
+  listCategory,
+  editCategory,
+  addProduct,
+  productList,
+  editProduct,
+  listAll,
+  listAllUsers,
+  toogleBlock,
+  toogleProduct,
+  getOrders,
+  updateOrderStatus,
+  changeStock
 }

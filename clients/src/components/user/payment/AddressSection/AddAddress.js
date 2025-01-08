@@ -34,6 +34,7 @@ const AddressPopup = ({ isOpen, onClose, onSubmit }) => {
         }
 
         onClose();
+        if(onSubmit) onSubmit()
     }
   };
 
