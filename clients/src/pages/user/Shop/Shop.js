@@ -15,7 +15,7 @@ const Shop = () => {
     currentPage: 1,
     totalPages: 1,
     totalProducts: 0,
-    productsPerPage: 3
+    productsPerPage: 6
   });
   const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -24,7 +24,7 @@ const Shop = () => {
       const response = await userAxiosInstance.get('/products', {
         params: {
           page: params.page || currentPage,
-          limit: 3,
+          limit: 6,
           sortBy: params.sortBy || sortBy,
           category: params.category || selectedCategory,
           search: params.search !== undefined ? params.search : searchQuery
@@ -68,6 +68,7 @@ const Shop = () => {
 
   // Handle category changes with transition
   const handleCategoryChange = (category) => {
+    console.log(category,"categoru")
     setIsTransitioning(true);
     setTimeout(() => {
       setSelectedCategory(category);

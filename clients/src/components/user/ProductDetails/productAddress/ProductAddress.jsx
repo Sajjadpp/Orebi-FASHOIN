@@ -14,10 +14,11 @@ const ProductAddress = ({product}) => {
         setSelectedSizeQnty(product?.stock?.find(item => item.size == selectedSize).quantity)
         console.log(selectedSizeQnty)
     },[selectedSize])
+
     const handleAddToCart = async() =>{
           
-        if(!user?.token) return toast.error('please login')
-          try{
+        if(!user?.token) return toast.error('please login')        
+        try{
             console.log('woroking')
             if(!selectedSize) return toast.error('select a size')
             let response = await userAxiosInstance.put('/cart', {
@@ -81,7 +82,10 @@ const ProductAddress = ({product}) => {
                 </button>
                 <span className="px-4 py-1 border">{quantity}</span>
                 <button
-                    onClick={() => setQuantity(Math.min( selectedSizeQnty, quantity + 1))}
+                    onClick={() => {
+                        if(quantity+1 > 10) return toast.error('maximum exeeded')
+                        return setQuantity(Math.min( selectedSizeQnty, quantity + 1))
+                    }}
                     className="px-3 py-1 border hover:bg-gray-100"
                 >
                     +

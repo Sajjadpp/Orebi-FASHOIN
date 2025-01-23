@@ -1,120 +1,159 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import toast from 'react-hot-toast';
+import { useRazorpay } from 'react-razorpay';
 
 import { fetchData } from '../../../services/fetchData/fetchData';
-import { useSelector } from 'react-redux';
+import { userAxiosInstance } from '../../../redux/constants/AxiosInstance';
 import AddressSection from '../../../components/user/payment/AddressSection/AddressSection';
 import PaymentSection from '../../../components/user/payment/PaymentMethods/PaymentDetails';
 import OrderSummary from '../../../components/user/payment/OrderSummury/OrderSummary';
-import toast from 'react-hot-toast';
-import { userAxiosInstance } from '../../../redux/constants/AxiosInstance';
+import CouponPopup from '../../../components/user/payment/CouponPopup/CouponPopup';
 import NetworkAlert from '../../../assets/elements/NetworkAlert';
-
-
+import handlePayment from '../../../services/Payment/Razorpay';
 
 const CheckoutPage = () => {
-
   const [selectedAddress, setSelectedAddress] = useState(null);
   const [selectedPayment, setSelectedPayment] = useState(null);
-  const [addresses, setAddress] = useState([])
-  const [orders, setOrders] = useState([])
-  const userId = useSelector(state => state.userReducer.user._id)
-  const [outOfStock, setOutOfStock] = useState(false)
-  const [total, setTotal] = useState(orders?.cartItems?.total || 0)
-  const navigate = useNavigate()
+  const [addresses, setAddresses] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [outOfStock, setOutOfStock] = useState(false);
+  const [total, setTotal] = useState(0);
+  const [couponAmt, setCouponAmt] = useState(0)
+ 
+  const userId = useSelector(state => state.userReducer.user._id);
+  const navigate = useNavigate();
+  const { Razorpay } = useRazorpay();
 
-  const fetchAddress = async()=>{
-    let response = await fetchData('address', {userId})
-    console.log(response)
-    setAddress(response)
-  }
-
-  const fetchOrder = async() =>{
-    let response = await fetchData('cart', {userId})
-    console.log(response,"working")
-    setOrders(response)
-  }
-
-  // check products
-  const checkProduct =async() =>{
-    if(!orders) return 
-    let products = orders.products.map(item => item.cartItems);
-    console.log(products);
-    
-    try{
-      
-      let response = await userAxiosInstance.get('/checkProducts', {
-        params:{
-          products
-        }
-      })
-      if(!response.data) return 
-      
-      setOutOfStock(response.data)
-      console.log(response)
+  // Fetch User Data
+  const fetchAddress = async () => {
+    try {
+      const response = await fetchData('address', { userId });
+      setAddresses(response);
+    } catch (error) {
+      console.error('Error fetching addresses:', error);
+      toast.error('Failed to fetch addresses.');
     }
-    catch(error){
-      console.log('error', error)
-    }
-  }
-
-  useEffect(()=>{
-    console.log('working')
-    fetchAddress()
-    fetchOrder()
-  },[])
-
-  
-
-  useEffect(()=>{
-    checkProduct()
-  },[orders])
-
-
-  const handleApplyCoupon = (code) => {
-    // Add coupon logic here
-    console.log('Applying coupon:', code);
   };
 
-  const handleCheckout = async(shippingCharge) => {
+  const fetchOrder = async () => {
+    try {
+      const response = await fetchData('cart', { userId });
+      setOrders(response);
+      setTotal(response?.cartItems?.total || 0);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      toast.error('Failed to fetch orders.');
+    }
+  };
+
+  // Check Product Stock
+  const checkProduct = async () => {
+    if (!orders || !orders.products) return false;
+    const products = orders.products.map(item => item.cartItems);
+
+    try {
+      const response = await userAxiosInstance.get('/checkProducts', { params: { products } });
+      setOutOfStock(response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error checking product stock:', error);
+      toast.error('Failed to check product availability.');
+      return false;
+    }
+  };
+
+  // Apply Coupon Code
+  const handleApplyCoupon = async (code) => {
+    if (!code) {
+      toast.error('Please enter a coupon code.');
+      return;
+    }
+
+    try {
+      const response = await userAxiosInstance.post('/checkCoupon', { code, userId, total });
+      
+      const newTotal = total - response.data.discountAmount;
+      setCouponAmt(response.data.discountAmount)
+
+      toast.success(`Coupon applied! You saved ₹${response.data.discountAmount}`);
+
+    } catch (error) {
+      console.error('Error applying coupon:', error);
+      toast.error(error.response.data.message);
+    }
+  };
+
+  // Handle Checkout
+  const handleCheckout = async (shippingCharge) => {
     if (!selectedAddress) {
-      toast.error('Please select a shipping address');
+      toast.error('Please select a shipping address.');
       return;
     }
     if (!selectedPayment) {
-      toast.error('Please select a payment method');
+      toast.error('Please select a payment method.');
       return;
     }
-    // Add checkout logic here
-    console.log('Proceeding to checkout');
-    try{
-      if(await checkProduct()){
-        return toast.error('product is out of stock')
+
+    try {
+      const isOutOfStock = await checkProduct();
+      if (isOutOfStock) {
+        toast.error('One or more products are out of stock.');
+        return;
       }
-      
-      let response = await userAxiosInstance.post('/order', {
-        ...orders, 
+      console.log(total, couponAmt, shippingCharge)
+      const response = await userAxiosInstance.post('/order', {
+        ...orders,
         selectedAddress,
         shippingCharge,
-        total
-      })
-      
-      navigate('/orderCompleted',{
-        state:{
-          response: JSON.stringify(response.data)
-        }
-      })
+        discountApplied: couponAmt,
+        total,
+        selectedPayment,
+      });
 
-    }
-    catch(error){
-      console.log(error);
-      toast.error("try again later")
+      if (selectedPayment === 'razorpay') {
+        handleRazorPay(response.data);
+      } else {
+        navigate('/orderCompleted', { state: { response: JSON.stringify(response.data) } });
+      }
+    } catch (error) {
+      console.error('Error during checkout:', error);
+      toast.error(error.response.data?.message ?? error.response.data ?? 'Error during checkout');
     }
   };
 
+  // Razorpay Payment
+  const handleRazorPay = (data) => {
+    handlePayment(Razorpay, async () => {
+      try {
+        await userAxiosInstance.put('/order', { _id: data._id, paymentStatus: 'success' });
+        navigate('/orderCompleted', { state: { response: JSON.stringify(data) } });
+      } catch (error) {
+        console.error('Error during payment confirmation:', error);
+        toast.error('Payment failed. Try again.');
+      }
+    }, ()=>{
+
+    }, total);
+  };
+
+  // Fetch Data on Load
+  useEffect(() => {
+    fetchAddress();
+    fetchOrder();
+  }, []);
+
+  useEffect(() => {
+    if (orders.products?.length) {
+      checkProduct();
+    }
+  }, [orders]);
+
   return (
-    <div className="min-h-screen bg-gray-100 py-8">
-      {outOfStock && <NetworkAlert setNetwork={setOutOfStock} text={'product is out of stock'}/>}
+    <div className="min-h-screen bg-gray-100 py-8 relative">
+      <CouponPopup onApplyCoupon={handleApplyCoupon} />
+      {outOfStock && <NetworkAlert setNetwork={setOutOfStock} text="Product is out of stock" />}
       <div className="max-w-7xl mx-auto px-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
@@ -136,6 +175,9 @@ const CheckoutPage = () => {
               handleCheckout={handleCheckout}
               refreshData={fetchOrder}
               onTotalChange={setTotal}
+              total={total}
+              couponAmt={couponAmt}
+              onCouponChange={setCouponAmt}
             />
           </div>
         </div>

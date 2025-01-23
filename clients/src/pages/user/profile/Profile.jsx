@@ -35,7 +35,6 @@ const ProfileApp = () => {
     { id: 'orders', icon: ShoppingBag, label: 'Orders' },
     { id: 'addresses', icon: MapPin, label: 'Addresses' },
     { id: 'wallet', icon: Wallet, label: 'Wallet' },
-    { id: 'coupons', icon: Gift, label: 'Coupons'},
     { id: 'change password', icon: KeyIcon, label: 'change password' },
     
   ];
@@ -51,7 +50,7 @@ const ProfileApp = () => {
       case 'wallet':
         return <WalletContent />;
       case 'coupons':
-        return <CouponsContent />;
+        
       case 'change password':
         return <ForgotPassword/>;
       default:

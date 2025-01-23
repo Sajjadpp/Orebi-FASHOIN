@@ -6,11 +6,14 @@ import { Clock, CreditCard, Package, Truck } from "lucide-react";
 import { fetchData } from "../../../../services/fetchData/fetchData";
 import toast from "react-hot-toast";
 import OrderAddress from "./OrderAddress";
+import Confirm from "../../../../pages/user/Cart/Confirm";
+import Confirmation from "../../../../assets/elements/Confirmation";
 
 
 const OrderDetails = ({orders, refresh}) => {
   const [order, setOrder] = useState({})
   const [addressDetails, setAddressDetails] = useState(false);
+  const [cancelConfirm, setCancelConfirm] = useState(false)
 
   const getStatusColor = (status) => {
     const statusColors = {
@@ -59,13 +62,14 @@ const OrderDetails = ({orders, refresh}) => {
         }
       })
       console.log(response)
-      toast.error(response.data)
+      toast.success(response.data)
       refresh()
       
     }
     catch(error){
       console.log(error);
-      toast.success('try again later')
+      toast.error('try again later')
+
     }
   }
 
@@ -91,7 +95,7 @@ const OrderDetails = ({orders, refresh}) => {
           {/* Order Header */}
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h3 className="text-lg font-semibold">Order #{order._id.slice(-6)}</h3>
+              <h3 className="text-lg font-semibold">Order #{order._id}</h3>
               <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
                 <Clock size={16} />
                 <span>Placed on {formatDate(order.createdAt)}</span>
@@ -120,9 +124,9 @@ const OrderDetails = ({orders, refresh}) => {
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-between">
-                    <h4 className="font-medium">Product Name</h4>
+                    <h4 className="font-medium">{item.productId.name}</h4>
                     <div>
-                      <span className="font-medium">₹{item.price.toFixed(2)}</span> 
+                      <span className="font-medium">₹{item.price.toFixed(2)}</span>
                     </div>
                   </div>
                   <div className="mt-1 text-sm text-gray-600">
@@ -175,11 +179,18 @@ const OrderDetails = ({orders, refresh}) => {
             </div>
           </div>
         </div>
-        <button className={`h-[50px] px-4 bg-red-300 ${order.orderStatus !=="Pending"&& 'hidden'}`} onClick={()=> handleCancelOrder('null', 'FULL')}>
-            cancell order
+        <button className={`h-[50px] px-4 bg-red-300 ${order.orderStatus !=="pending"&& 'hidden'}`} onClick={()=> setCancelConfirm({id:'null', portion:'FULL'})}>
+            cancel order
         </button> 
         </div>
       </div>
+      <Confirmation
+        buttonText={"cancel order"}
+        data={'Are you sure to delete the order'}
+        isOpen={cancelConfirm}
+        onClose={()=> setCancelConfirm(false)}
+        onConfirm={()=> handleCancelOrder(cancelConfirm.id, cancelConfirm.portion)}
+      />
     </>
   )
     

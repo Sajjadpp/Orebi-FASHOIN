@@ -11,8 +11,8 @@ function totalAmount(cart){
         let subTotal = 0
         for(let j = 0; j < stock.length; j++){
 
-            subTotal += stock[j].quantity * cart[i].productDetails.regularPrice
-        }
+            subTotal += stock[j].quantity * cart[i].productDetails.currentPrice
+        }   
         totalamt += subTotal
         cart[i].subTotal = subTotal
     }
@@ -217,6 +217,12 @@ const addWishList = async(req, res) =>{
         let wishList = await WishList.findOne({userId});
 
         if(wishList){
+            if(wishList.products.some(item => String(item) == String(productId))){
+                wishList.products = wishList.products.filter(product => String(productId) != String(product));
+                console.log(wishList,"wihslisst")
+                wishList.save();
+                return res.json('the product remove from wish list')  // product is already there
+            }
             wishList.products.push(productId);
             wishList.save()
             return res.json("wishList added")

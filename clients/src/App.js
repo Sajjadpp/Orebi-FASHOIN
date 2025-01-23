@@ -40,6 +40,12 @@ import OrderList from "./pages/admin/Orders/Orders";
 import OrderDetailsPage from "./components/admin/Orders/OrderViewDetails/OrderDetails";
 import StockList from "./pages/admin/Stock/StockManagement";
 import WishlistPage from "./pages/user/WhishList/WishList";
+import OfferListing from "./pages/admin/Offer/Offer";
+import AddOffer from "./pages/admin/Offer/addOffer";
+import CouponPage from "./pages/admin/Coupon/Coupons";
+import AddCouponPage from "./pages/admin/Coupon/AddCoupon";
+import EditCouponPage from "./pages/admin/Coupon/EditCoupon";
+import SalesReport from "./pages/admin/salesReport/SaleReportPage";
 
 
 const router = createBrowserRouter(
@@ -60,6 +66,8 @@ const router = createBrowserRouter(
         <Route path="/payment" element={<Payment />}></Route>
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/wishlist" element={<WishlistPage/>}/>
+        
+
       </Route>
       <Route path="/orderCompleted" element={<OrderConfirmation />}></Route>
       <Route path="/signup" element={<SignUp />}></Route>
@@ -84,6 +92,14 @@ const router = createBrowserRouter(
           <Route element={<UserManagement/>} path="customers"></Route>
           <Route element={<OrderList/>} path="orders"></Route>
           <Route element={<StockList/>} path='stockManagement'></Route>
+
+          <Route element={<OfferListing/>} path='offer'></Route>
+          <Route element={<AddOffer/>} path='addOffer'></Route>
+
+          <Route element={<CouponPage/>} path='coupon'></Route>
+          <Route element={<AddCouponPage/>} path='addCoupon'></Route>
+          <Route element={<EditCouponPage/>} path='editCoupon/:id'></Route>
+          <Route path="sales-report" element={<SalesReport/>}/>
         </Route>
           <Route element={<OrderDetailsPage/>} path="details"/>
       

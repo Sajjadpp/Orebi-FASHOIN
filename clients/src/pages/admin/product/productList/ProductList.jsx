@@ -118,10 +118,10 @@ const AdminProductList = () => {
                   {product.description}
                 </p>
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-lg font-bold">${product.currentPrice}</span>
+                  <span className="text-lg font-bold"> ₹{product.currentPrice}</span>
                   {product.regularPrice !== product.currentPrice && (
                     <span className="text-sm text-gray-500 line-through">
-                      ${product.regularPrice}
+                       ₹{product.regularPrice}
                     </span>
                   )}
                 </div>

@@ -5,6 +5,7 @@ const isAuth = (req, res, next) => {
     const token = req.headers['authorization']?.split(' ')[1];
     console.log(token)
     if (!token) {
+      console.log('no toKen')
       return res.status(403).json({ message: 'Token missing or invalid' });
     }
     

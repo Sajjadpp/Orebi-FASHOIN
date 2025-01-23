@@ -17,6 +17,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^16.4.7",
     "framer-motion": "^8.0.2",
+    "jspdf-autotable": "^3.8.4",
     "lodash": "^4.17.21",
     "lucide-react": "^0.468.0",
     "must": "^0.13.4",
@@ -29,6 +30,7 @@
     "react-image-crop": "^11.0.7",
     "react-loading-indicators": "^1.0.0",
     "react-paginate": "^8.1.4",
+    "react-razorpay": "^3.0.1",
     "react-redux": "^8.0.5",
     "react-router-dom": "^6.6.0",
     "react-scripts": "5.0.1",
@@ -40,7 +42,8 @@
     "tailwind-merge": "^2.5.5",
     "tailwind-scrollbar": "^2.1.0",
     "tailwindcss-animate": "^1.0.7",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "xlsx": "^0.18.5"
   },
   "scripts": {
     "start": "react-scripts start",

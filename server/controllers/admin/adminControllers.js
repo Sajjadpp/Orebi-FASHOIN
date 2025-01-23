@@ -6,6 +6,7 @@ const Product = require("../../models/ProductSchema")
 const Users = require("../../models/userSchema");
 const Orders = require('../../models/ordersSchema')
 const { generateToken } = require("../../services/jwt");
+
 const adminLogin= async(req, res)=>{
 
     try{
@@ -73,6 +74,7 @@ const listCategory =async(req, res) =>{
         console.log(error)
     }
 }
+
 const editCategory = async(req, res) =>{
     const {name, description, id} = req.body;
     let ObjectId = new mongoose.Types.ObjectId(id)
@@ -320,7 +322,7 @@ const changeStock = async(req, res) =>{
   try{
     const {stock, _id} = req.body;
     console.log(stock, _id)
-    const newProduct = await Product.findOneAndUpdate({_id: _id}, {$set:{stock:stock}})
+    await Product.findOneAndUpdate({_id: _id}, {$set:{stock:stock}})
     res.json('stock updated')
   }
   catch(error){
@@ -329,6 +331,7 @@ const changeStock = async(req, res) =>{
 
   }
 }
+
 module.exports = {
   adminLogin,
   addCategory,

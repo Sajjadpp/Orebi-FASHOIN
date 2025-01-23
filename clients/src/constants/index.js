@@ -38,7 +38,7 @@ export const navBarList = [
   },
   {
     _id: 1005,
-    title: "whishlist",
+    title: "wishlist",
     link: "/wishList",
   },
 ];

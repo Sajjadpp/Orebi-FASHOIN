@@ -57,7 +57,7 @@ const OrdersContent = () => {
           {/* Order Header */}
           <div className="flex justify-between items-start mb-4">
             <div>
-              <h3 className="text-lg font-semibold">Order #{order._id.slice(-6)}</h3>
+              <h3 className="text-lg font-semibold">{order._id}</h3>
               <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
                 <Clock size={16} />
                 <span>Placed on {formatDate(order.createdAt)}</span>
@@ -81,7 +81,7 @@ const OrdersContent = () => {
                 </div>
                 <div className="flex-1">
                   <div className="flex justify-between">
-                    <h4 className="font-medium">Product Name</h4>
+                    <h4 className="font-medium">{item.productId.name}</h4>
                     <span className={`text-sm ${getStatusColor(item.status)} px-2 py-1 rounded-full`}>
                       {item.status} 
                     </span>

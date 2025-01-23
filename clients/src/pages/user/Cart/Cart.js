@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Breadcrumbs from "../../../components/user/pageProps/Breadcrumbs";
 import { resetCart } from "../../../redux/orebiSlice";
@@ -29,10 +29,12 @@ const Cart = () => {
       toast.error("Failed to fetch cart data. Please try again later.");
     }
   };
-
+  const navigate = useNavigate()
   // Fetch cart whenever trigger or user changes
   useEffect(() => {
     if (user) fetchCart();
+
+    if(!user) navigate('/signin')
   }, [user, trigger]);
 
   // Calculate shipping charges based on total amount

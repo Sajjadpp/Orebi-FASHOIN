@@ -3,8 +3,8 @@ const mongoose = require('mongoose');
 const ObjectId = mongoose.Schema.ObjectId
 
 let ordersSchema = mongoose.Schema({
-
-    userId:{type: ObjectId, required: true},
+    _id: {required: true, type: String, },
+    userId:{type: ObjectId, required: true, ref:"user"},
     items:[{
         productId: { type: mongoose.Schema.Types.ObjectId, ref: 'product', required: true },
         stocks:[{
@@ -25,7 +25,8 @@ let ordersSchema = mongoose.Schema({
       enum: ['pending', 'processing', 'Shipped', 'Out for delivery', 'Delivered', 'Returned', 'Cancelled' ,'return-request' ,'cancel-request'],
       default: 'pending',
     },
-
+    discountApplied:{type: Number, required: true},
+    shippingCharge:{type: Number, required: true},
 },{
     timestamps: true
 })
