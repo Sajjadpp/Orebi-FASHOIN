@@ -51,7 +51,18 @@ const isBlocked = async (req, res, next) => {
     });
 };
 
+const isCapableToCod = (req, res, next) =>{
+
+    const {totalAmt: totalAmount, selectedPayment} = req.body
+    console.log(totalAmount, selectedPayment)
+    if(totalAmount > 1000 && selectedPayment === "cod"){
+        return res.status(500).json(`The total amount is ₹${totalAmount}. Please select a different payment option for amounts greater than ₹1000.`)
+    }
+    next()
+}
+
 module.exports = {
     authenticateToken,
-    isBlocked
+    isBlocked,
+    isCapableToCod
 }

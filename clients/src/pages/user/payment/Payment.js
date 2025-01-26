@@ -47,7 +47,7 @@ const CheckoutPage = () => {
       toast.error('Failed to fetch orders.');
     }
   };
-
+  
   // Check Product Stock
   const checkProduct = async () => {
     if (!orders || !orders.products) return false;
@@ -136,7 +136,11 @@ const CheckoutPage = () => {
         toast.error('Payment failed. Try again.');
       }
     }, ()=>{
-
+      console.log('error')
+      toast.error('payment failed you can placae the payment in the order')
+      setTimeout(()=>{
+        navigate('/profile')
+      },2000)
     }, total);
   };
 

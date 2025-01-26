@@ -6,7 +6,7 @@ const { listCategory } = require("../controllers/admin/adminControllers");
 const { addToCart, cartCount, listCart, updateCount, deleteCartProducts, listWishlist, addWishList, removeWishList } = require("../controllers/user/cartController");
 const { addAddress, listAddress, deleteAddress, sendOrderMail, listOrder, editAddress, singleAddress } = require("../controllers/user/addressController");
 const { checkProductAvailability, forgetPasswordOtp } = require("../controllers/user/AuthController");
-const { authenticateToken, isBlocked } = require("../Auth/userAuth");
+const { authenticateToken, isBlocked, isCapableToCod } = require("../Auth/userAuth");
 const { verifyToken } = require("../services/jwt");
 const { razorpayToken, editOrder, cancelOrder, getWallet, addOrder } = require("../controllers/user/OrderController");
 const { checkApplyCode, getCoupons } = require("../controllers/user/offerAndCouponController");
@@ -48,7 +48,7 @@ user.get('/profile', isBlocked, listProfileThings);
 user.get('/checkProducts', checkProductAvailability) // productAvilable checking
 
 
-user.post("/order", authenticateToken, isBlocked, addOrder)   
+user.post("/order", authenticateToken, isBlocked, isCapableToCod,addOrder)   
 user.get('/sendOrderMail', isBlocked, sendOrderMail)
 user.get('/order', authenticateToken, isBlocked, listOrder)
 user.delete("/order", authenticateToken, isBlocked, cancelOrder)

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const OrderSummary = ({ items, onApplyCoupon, handleCheckout, onTotalChange:setTotal, total, couponAmt, onCouponChange }) => {
   const [couponCode, setCouponCode] = useState('');
   const [shippingCharge, setShippingCharge] = useState(0);
   const subtotal = items?.totalAmt;
-
+  const navigate = useNavigate()
 
   useEffect(() => {
     console.log('working 1', items.totalAmt)
@@ -28,7 +29,12 @@ const OrderSummary = ({ items, onApplyCoupon, handleCheckout, onTotalChange:setT
       console.log(total)
   },[items.totalAmt, couponAmt]);
 
-  
+  useEffect(() =>{
+    if(total == items.totalAmt+shippingCharge){
+      navigate('/')
+    }
+
+  },[subtotal])
   
   return (
     <div className="bg-white p-6 rounded-lg shadow">
