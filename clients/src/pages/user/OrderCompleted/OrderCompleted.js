@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { userAxiosInstance } from '../../../redux/constants/AxiosInstance';
 import toast from 'react-hot-toast';
 import { useSelector } from 'react-redux';
+import { generateInvoice } from '../../../services/Invoice/Invoice';
 
 const OrderConfirmation = () => {
   const [orderDetails, setOrderDetails] = useState({});
@@ -55,6 +56,25 @@ const OrderConfirmation = () => {
     sendMessage();
   }, [orderDetails, user]);
 
+  const handleDownloadInvoice = () =>{
+    const sampleInvoiceData = {
+      invoiceId: 'INV-2024-001',
+      date: new Date().toLocaleDateString(),
+      customerName: 'John Doe',
+      customerAddress: '456 Customer Lane, Business City',
+      items: [
+        { name: 'Product A', price: 100, quantity: 2 },
+        { name: 'Service B', price: 50, quantity: 1 }
+      ],
+      subtotal: 250,
+      taxRate: 18,
+      tax: 45,
+      totalAmount: 295
+    };
+    
+    generateInvoice(sampleInvoiceData);
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="w-full max-w-lg bg-white rounded-lg shadow-lg overflow-hidden">
@@ -73,7 +93,7 @@ const OrderConfirmation = () => {
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-sm text-gray-600">Order Number</p>
             <p className="text-lg font-medium text-gray-900">
-              {orderDetails?.orderNumber || '#N/A'}
+              {orderDetails?.id || '#N/A'}
             </p>
           </div>
 
@@ -83,7 +103,7 @@ const OrderConfirmation = () => {
             <div className="space-y-2">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
-                <span>{formatPrice(orderDetails.totalAmount)}</span>
+                <span>{formatPrice(orderDetails.totalAmount - orderDetails.shippingCharge)}</span>
               </div>
               {discount > 0 && (
                 <div className="flex justify-between text-green-600">
@@ -93,7 +113,7 @@ const OrderConfirmation = () => {
               )}
               <div className="flex justify-between text-gray-600">
                 <span>Shipping</span>
-                <span>{formatPrice(50)}</span>
+                <span>{formatPrice(orderDetails.shippingCharge)}</span>
               </div>
               <div className="flex justify-between font-medium text-gray-900 pt-2 border-t border-gray-200">
                 <span>Total</span>
@@ -128,6 +148,12 @@ const OrderConfirmation = () => {
               className="w-full bg-gray-100 text-gray-900 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors"
             >
               Continue Shopping
+            </button>
+            <button
+              onClick={() => handleDownloadInvoice()}
+              className="w-full bg-gray-100 text-gray-900 py-3 px-4 rounded-lg hover:bg-gray-200 transition-colors"
+            >
+              Download Invoice
             </button>
           </div>
         </div>
