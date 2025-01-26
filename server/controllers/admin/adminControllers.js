@@ -297,25 +297,65 @@ const getOrders = async(req, res) =>{
   }
 }
 
-const updateOrderStatus = async(req,res) =>{
-  const {status} = req.query
-  console.log(req.query)
-  try{
-    let _id = new mongoose.Types.ObjectId(req.query._id)
-    let updateOrder = await Orders.findOne({_id});
-    console.log(updateOrder)
+const updateOrderStatus = async (req, res) => {
+  const { status } = req.query;
+
+  try {
+    let updateOrder = await Orders.findOne({ _id: req.query._id });
+
+    if (!updateOrder) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Update the order status and payment status
     updateOrder.orderStatus = status;
-    updateOrder.paymentStatus = status === "Shipped" ? "success" : 'failed';
-    updateOrder.items.map(product => product.status = status)
-    updateOrder.save();
-    console.log(updateOrder)
-    res.json('order updated ')
+    updateOrder.paymentStatus = status === "Shipped" ? "success" : status === "Cancelled" ? "refunded" : "failed";
+    updateOrder.items.map((product) => (product.status = status));
+
+    // Decrement stock only when the order is "Shipped"
+    if (status === "Shipped") {
+      for (const item of updateOrder.items) {
+        let { productId, stocks } = item;
+        productId = new mongoose.Types.ObjectId(productId);
+
+        // Loop through the stocks array to update quantities for each size
+        for (const stockItem of stocks) {
+          const { size, quantity } = stockItem;
+          await Product.findOneAndUpdate(
+            { _id: productId, "stock.size": size }, // Match product and size
+            { $inc: { "stock.$.quantity": -quantity } } // Decrease stock quantity
+          );
+        }
+      }
+    }
+
+    // Restock items if the order status is "Cancelled"
+    if (status === "Cancelled") {
+      for (const item of updateOrder.items) {
+        let { productId, stocks } = item;
+        productId = new mongoose.Types.ObjectId(productId);
+
+        // Loop through the stocks array to update quantities for each size
+        for (const stockItem of stocks) {
+          const { size, quantity } = stockItem;
+          await Product.findOneAndUpdate(
+            { _id: productId, "stock.size": size }, // Match product and size
+            { $inc: { "stock.$.quantity": quantity } } // Increase stock quantity
+          );
+        }
+      }
+    }
+
+    await updateOrder.save();
+
+    res.json("Order updated successfully");
+  } catch (error) {
+    console.log(error);
+    res.status(500).json("Something went wrong, please try again");
   }
-  catch(error){
-    console.log(error)
-    res.status(500).json("try again");
-  }
-}
+};
+
+
 
 const changeStock = async(req, res) =>{
 

@@ -62,7 +62,7 @@ const OrderSummary = ({ items, onApplyCoupon, handleCheckout, onTotalChange:setT
         </div>
         <div className="flex justify-between mb-2">
           <span>Applied coupon</span>
-          <span>{`₹${couponAmt}`}</span>
+          <span>{`-₹${couponAmt}`}</span>
         </div>
         <div className="flex justify-between font-semibold text-lg mb-6">
           <span>Total</span>

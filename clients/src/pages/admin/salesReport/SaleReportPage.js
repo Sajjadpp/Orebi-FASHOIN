@@ -155,7 +155,7 @@ const SalesReport = () => {
         </div>
         <div className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-gray-500 text-sm">Total Discount</h3>
-          <p className="text-2xl font-bold">₹{salesData.totalDiscount}</p>
+          <p className="text-2xl font-bold">₹{salesData?.totalDiscount}</p>
         </div>
       </div>
 
@@ -190,7 +190,7 @@ const SalesReport = () => {
                         <td className="px-6 py-4 text-sm text-center">{`${order.user.username}`}</td>
                         <td className="px-6 py-4 text-sm text-center">{formatTimestampToDate(order.date)}</td>
                         <td className="px-6 py-4 text-sm text-center">{order.paymentMethod}</td>
-                        <td className="px-6 py-4 text-sm text-center">₹{order.discount}</td>
+                        <td className="px-6 py-4 text-sm text-center">₹{order.discount ?? 0}</td>
                     </tr> 
                 )
               

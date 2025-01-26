@@ -108,7 +108,7 @@ const CheckoutPage = () => {
         selectedAddress,
         shippingCharge,
         discountApplied: couponAmt,
-        total,
+        total: total-couponAmt+shippingCharge,
         selectedPayment,
       });
 
@@ -125,7 +125,8 @@ const CheckoutPage = () => {
 
   // Razorpay Payment
   const handleRazorPay = (data) => {
-    console.log(data)
+    console.log(total,"total in handle razorpay")
+
     handlePayment(Razorpay, async () => {
       try {
         await userAxiosInstance.put('/order', { _id: data._id, paymentStatus: 'success' });
@@ -135,7 +136,7 @@ const CheckoutPage = () => {
         toast.error('Payment failed. Try again.');
       }
     }, ()=>{
-      
+
     }, total);
   };
 

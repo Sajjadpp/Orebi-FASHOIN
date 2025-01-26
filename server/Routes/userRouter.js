@@ -31,7 +31,7 @@ user.get('/products', isBlocked, listProductByFilter)
 
 user.get('/listCategory', listCategory)
 
-user.get('/cart', authenticateToken,isBlocked,authenticateToken, listCart)
+user.get('/cart', authenticateToken,isBlocked, listCart)
 user.put('/cart', authenticateToken, isBlocked, addToCart);
 user.patch('/cart', authenticateToken, isBlocked, updateCount)
 user.delete('/cart', authenticateToken, isBlocked, deleteCartProducts)

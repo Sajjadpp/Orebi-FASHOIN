@@ -161,9 +161,10 @@ const EditProducts = ({isOpen, product, onClose}) => {
       console.log(newImageReview, formData);
       
       // Submit the form data
+      console.log(formData, "formdata submition")
       let response = await adminAxiosInstance.put(
         '/product',
-        { ...formData , images: newImageReview, stock: stockItems},
+        { ...formData , images: newImageReview, stock: stockItems, name: formData.productName},
         {
           headers: {
             'Content-Type': 'application/json',
@@ -183,7 +184,7 @@ const EditProducts = ({isOpen, product, onClose}) => {
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow">
-      <h2 className="text-2xl font-semibold mb-6">Add Product</h2>
+      <h2 className="text-2xl font-semibold mb-6">Edit Product</h2>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Previous form fields remain unchanged */}

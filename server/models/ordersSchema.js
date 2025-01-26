@@ -19,7 +19,7 @@ let ordersSchema = mongoose.Schema({
     totalAmount: { type: Number, required: true },
     shippingAddress: { type: mongoose.Schema.Types.ObjectId, ref: 'Address', required: true },
     paymentMethod: { type: String, enum: ['razorpay', 'cod' , 'wallet'], required: true },
-    paymentStatus: { type: String, enum: ['pending', 'success', 'failed'], default: 'pending' },
+    paymentStatus: { type: String, enum: ['pending', 'success', 'failed', "refunded"], default: 'pending' },
     orderStatus: {
       type: String,
       enum: ['pending', 'processing', 'Shipped', 'Out for delivery', 'Delivered', 'Returned', 'Cancelled' ,'return-request' ,'cancel-request'],
