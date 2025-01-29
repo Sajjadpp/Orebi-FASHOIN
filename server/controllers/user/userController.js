@@ -6,7 +6,9 @@ const bcrypt = require("bcrypt")
 const { default: mongoose } = require("mongoose")
 const Product = require("../../models/ProductSchema")
 const Address = require("../../models/addressSchema")
-const Orders = require('../../models/ordersSchema')
+const Orders = require('../../models/ordersSchema');
+let Wallet = require('../../models/walletSchema')
+const generateReferralCode = require("../../services/referal/referalFunction")
 
 
  const generateOtp = ()=>{
@@ -60,13 +62,32 @@ const verifyOtp = async(req, res) =>{
     try{
         let hashPass = await bcrypt.hash(userData.password, 10);
         console.log(hashPass)
-        let user = new User({...userData, username: userData.fullName, password: hashPass});
+        const referralCode = generateReferralCode(userData.fullName)
+        let user = new User({...userData, username: userData.fullName, password: hashPass, referralCode});
         
-        user.password = hashPass
+        user.password = hashPass;
         user.save();
         console.log(user)
         let token = generateToken({user: user._id})
         delete user.password
+
+        // REFERAL EARN IF THERE
+        let refExist = await User.findOne({referralCode: userData.referralCode})
+        let id = new mongoose.Types.ObjectId()
+        if(refExist){
+            let frndWallet = await Wallet.findById(refExist._id);
+            if(!frndWallet){
+                frndWallet = new Wallet({user: new mongoose.Types.ObjectId(refExist._id)})
+            }
+            frndWallet.balance += 50;
+            frndWallet.transactions.unshift({transactionId: id, type: "credit", amount: 50, description: 'Refer bonus through '+user.username});
+            await frndWallet.save()
+            
+            let myWallet = new Wallet({user: new mongoose.Types.ObjectId(user._id)});
+            myWallet.balance += 50;
+            myWallet.transactions.unshift({transactionId: id, type: "credit", amount: 50, description: 'Refer bonus by applaying refer coupon' });
+            await myWallet.save()
+        }
 
         res.cookie("OREBI_TOKEN",token, {maxAge: 1000*60*60*24})
         res.json({message:"user verified lets begin! ", user, token})

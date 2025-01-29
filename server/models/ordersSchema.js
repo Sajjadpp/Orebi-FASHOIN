@@ -13,7 +13,17 @@ let ordersSchema = mongoose.Schema({
         }],
         price:{required: true, type: Number},
         total:{required: true, type: Number},
-        status: { type: String, enum: ['Pending', 'Shipped','Out for delivery', 'Delivered', 'Returned', 'Cancelled' ,'return-request' ,'cancel-request'], default: 'Pending' }
+        status: { type: String, enum: ['Pending', 'Shipped','Out for delivery', 'Delivered', 'Returned', 'Cancelled' ,'return-request' ,'cancel-request', 'Return Declined'], default: 'Pending' },
+        returnDetails: {
+            reason: String,
+            details: String,
+            requestedAt: Date,
+            status: {
+                type: String,
+                enum: ['pending', 'approved', 'rejected', 'completed'],
+                default: 'pending'
+            },
+        },
 
     }],
     totalAmount: { type: Number, required: true },

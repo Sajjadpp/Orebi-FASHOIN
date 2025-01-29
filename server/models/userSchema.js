@@ -8,7 +8,8 @@ const userSchema = mongoose.Schema({
     mobileNo: { required: true, default: "null", type: String},
     googleId: { default: null, type: String},
     status: {default: true, type: Boolean, required:true},
-    profile: {default:null, type: String}
+    profile: {default:null, type: String},
+    referralCode: {type: String}
 },{
     timestamps: true
 })
