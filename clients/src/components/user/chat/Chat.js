@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { MessageCircle, X, Send } from "lucide-react";
 import { io } from "socket.io-client";
 import { useSelector } from "react-redux";
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || "http://localhost:3009";
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || "http://localhost:4001";
 
 const ChatPopup = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,137 +11,73 @@ const ChatPopup = () => {
   const [messages, setMessages] = useState([
     { text: "Hello! How can I help you today?", sender: "admin" },
   ]);
-  const user = useSelector(state => state.userReducer.user)
+  const user = useSelector((state) => state.userReducer.user);
   const [socket, setSocket] = useState(null);
-  const [agentSocketId, setAgentSocketId] = useState(null);
-  const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [connectionStatus, setConnectionStatus] = useState("disconnected");
 
   // Initialize socket connection
   useEffect(() => {
-    console.log('Initializing socket connection...');
     const newSocket = io(SOCKET_URL);
     setSocket(newSocket);
-
-    newSocket.on('connect', () => {
-      console.log('Socket connected');
-      setConnectionStatus('connected');
-      newSocket.emit("startChat", "customer123");
-      console.log('Sent startChat event');
+    console.log('working1')
+    if(!user?._id)return 
+    console.log('working2')
+    newSocket.on("connect", () => {
+      setConnectionStatus("connected");
+      newSocket.emit("user-connected", user?._id, "user");
     });
 
-    newSocket.on('connect_error', (error) => {
-      console.error('Connection error:', error);
-      setConnectionStatus('error');
+    // Handle incoming messages from the admin
+    newSocket.on("receiveMessage", ({ userId, message }) => {
+      setMessages((prev) => [
+        ...prev,
+        { text: message, sender: userId === user?._id ? "user" : "admin" },
+      ]);
     });
 
-    newSocket.on('disconnect', () => {
-      console.log('Socket disconnected');
-      setConnectionStatus('disconnected');
-      setAgentSocketId(null);
+    newSocket.on("disconnect", () => {
+      setConnectionStatus("disconnected");
     });
 
     return () => {
-      console.log('Cleaning up socket connection');
       newSocket.disconnect();
     };
-  }, []);
-
-  // Set up socket event listeners
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleChatAssigned = (data) => {
-      console.log('Chat assigned data received:', data);
-      if (data.agentSocketId) {
-        setAgentSocketId(data.agentSocketId);
-        setConnectionStatus('agent_connected');
-        console.log('Agent connected:', data.agentSocketId);
-      } else {
-        console.error('No agent socket ID in response:', data);
-      }
-    };
-
-    const handleReceiveMessage = ({ senderId, message }) => {
-      console.log('Received message:', { senderId, message });
-      setMessages(prev => [...prev, { text: message, sender: senderId }]);
-    };
-
-    socket.on("chatAssigned", handleChatAssigned);
-    socket.on("receiveMessage", handleReceiveMessage);
-
-    return () => {
-      socket.off("chatAssigned", handleChatAssigned);
-      socket.off("receiveMessage", handleReceiveMessage);
-    };
-  }, [socket]);
+  }, [user?._id]);
 
   // Send message handler
-  const sendMessage = useCallback((messageText) => {
-    if (!messageText.trim()) return;
-    
-    console.log('Sending message...', {
-      socketConnected: socket?.connected,
-      agentSocketId,
-      connectionStatus
+  const sendMessage = (message) => {
+    if (!socket || !message.trim()) return;
+    console.log(user,"emit send message")
+    socket.emit("sendMessage", {
+      username: user.username,
+      userId: user?._id,
+      message,
     });
 
-    if (!socket?.connected) {
-      console.error('Socket not connected');
-      return;
-    }
-
-    if (!agentSocketId) {
-      console.log('No agent assigned yet');
-      setMessages(prev => [...prev, { 
-        text: "Please wait for an agent to be connected.", 
-        sender: "system",
-        error: true 
-      }]);
-      return;
-    }
-
-    try {
-      setMessages(prev => [...prev, { text: messageText, sender: "user" }]);
-
-      socket.emit("sendMessage", {
-        senderId: user.username,
-        recipientSocketId: agentSocketId,
-        message: messageText,
-      });
-      console.log('Message sent successfully');
-    } catch (error) {
-      console.error("Failed to send message:", error);
-      setMessages(prev => [...prev, { 
-        text: "Failed to send message. Please try again.", 
-        sender: "system",
-        error: true 
-      }]);
-    }
-  }, [socket, agentSocketId, connectionStatus]);
+    // Append the user's message to the chat locally
+    setMessages((prev) => [...prev, { text: message, sender: "user" }]);
+    setMessage("");
+  };
 
   const getStatusMessage = () => {
     switch (connectionStatus) {
-      case 'disconnected':
-        return 'Connecting...';
-      case 'connected':
-        return 'Waiting for agent...';
-      case 'agent_connected':
-        return 'Chat Support';
-      case 'error':
-        return 'Connection Error';
+      case "disconnected":
+        return "Connecting...";
+      case "connected":
+        return "Chat Support";
+      case "error":
+        return "Connection Error";
       default:
-        return 'Chat Support';
+        return "Chat Support";
     }
   };
 
-  const isInputDisabled = connectionStatus !== 'agent_connected';
+  const isInputDisabled = connectionStatus !== "connected";
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!message.trim()) return;
-    
     sendMessage(message);
-    setMessage("");
   };
 
   return (
@@ -149,9 +85,7 @@ const ChatPopup = () => {
       {isOpen ? (
         <div className="bg-white rounded-lg shadow-xl w-96 h-[32rem] flex flex-col">
           <div className="bg-blue-600 p-4 rounded-t-lg flex justify-between items-center">
-            <h3 className="text-white font-medium">
-              {getStatusMessage()}
-            </h3>
+            <h3 className="text-white font-medium">{getStatusMessage()}</h3>
             <button
               onClick={() => setIsOpen(false)}
               className="text-white hover:bg-blue-700 rounded-full p-1"
@@ -172,8 +106,6 @@ const ChatPopup = () => {
                   className={`max-w-[75%] rounded-2xl px-4 py-2 ${
                     msg.sender === "user"
                       ? "bg-blue-600 text-white rounded-br-none"
-                      : msg.error
-                      ? "bg-red-100 text-red-800 rounded-bl-none"
                       : "bg-gray-100 text-gray-800 rounded-bl-none"
                   }`}
                 >

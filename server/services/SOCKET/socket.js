@@ -1,109 +1,71 @@
-const socketSetUp = (server) => {
-  const { Server } = require("socket.io");
-  
+const { Server } = require('socket.io');
+const express = require('express');
+const http = require('http');
+const app = express();
+const server = http.createServer(app);
+
+const socketSetUp = () => {
   const io = new Server(server, {
     cors: {
-      origin: process.env.CLIENT_PORT || "*",
-      methods: ["GET", "POST"],
-      credentials: true
-    }
+      origin: 'http://localhost:3000',
+      methods: ['GET', 'POST'],
+    },
   });
 
-  const users = new Map(); // userId -> {socketId, role, name, status, department}
-  const activeChats = new Map(); // chatId -> {customerId, agentId, messages, status, department}
-  const chatQueue = new Map(); // department -> [{customerId, timestamp, priority}]
+  // Store admin socket ID and online users
+  let adminSocketId = null;
+  const onlineUsers = new Map();
 
-  let adminId = null; // Store the admin ID (only one admin allowed)
+  io.on('connection', (socket) => {
+    console.log('User connected:', socket.id);
 
-  // Utility Functions
-  const createChatId = () => `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-  // Socket Connection Handler
-  io.on("connection", (socket) => {
-    console.log(`New connection: ${socket.id}`);
-
-    // User registration
-    socket.on("register", ({ userId, role, name, department }) => {
-      if (role === "admin") {
-        if (adminId) {
-          console.log('admin entered')
-          return socket.emit("error", { message: "Admin is already registered." });
-        }
-        console.log('user entered')
-        adminId = userId;
+    // Handle user or admin connection
+    socket.on('user-connected', (userId, role) => {
+      console.log(role)
+      if (role === 'admin') {
+        adminSocketId = socket.id;
+        console.log('Admin connected:', adminSocketId);
+      } else {
+        onlineUsers.set(socket.id, userId);
+        console.log('User connected:', userId);
       }
-
-      users.set(userId, {
-        socketId: socket.id,
-        role,
-        name,
-        department,
-        status: role === "admin" ? "active" : "available"
-      });
-
-      io.emit("userUpdate", {
-        admin: adminId ? users.get(adminId) : null,
-        agents: Array.from(users.values()).filter((u) => u.role === "agent")
-      });
+      console.log(onlineUsers)
     });
 
-    // Start chat request
-    socket.on("startChat", ({ customerId, department, query }) => {
-      const chatId = createChatId();
-      activeChats.set(chatId, {
-        customerId,
-        agentId: adminId, // Assign all chats to the admin
-        messages: [],
-        status: "active",
-        department,
-        startTime: Date.now()
-      });
+    // Handle user messages sent to admin
+    socket.on('sendMessage', ({ message, userId }) => {
+      console.log(`User (${userId}) sent a message: ${message}`);
 
-      const adminSocket = adminId ? users.get(adminId).socketId : null;
-      if (adminSocket) {
-        io.to(adminSocket).emit("newChat", { chatId, customerId });
-      }
-
-      socket.emit("chatAssigned", { chatId, adminId });
-    });
-
-    // Message handling
-    socket.on("sendMessage", ({ chatId, message }) => {
-      const chat = activeChats.get(chatId);
-      if (!chat) return;
-
-      const messageData = {
-        sender: users.get(socket.id)?.role === "admin" ? adminId : chat.customerId,
-        message,
-        timestamp: Date.now()
-      };
-
-      chat.messages.push(messageData);
-
-      const recipientId = messageData.sender === adminId ? chat.customerId : adminId;
-      const recipientSocket = users.get(recipientId)?.socketId;
-
-      if (recipientSocket) {
-        io.to(recipientSocket).emit("receiveMessage", { chatId, ...messageData });
+      if (adminSocketId) {
+        io.to(adminSocketId).emit('receiveMessage', {
+          senderId: userId,
+          userId,
+          message,
+          timestamp: new Date().toISOString(),
+        });
+        console.log(`Message forwarded to admin: ${message} from ${userId}`);
+      } else {
+        console.log('Admin is not connected, message cannot be delivered');
       }
     });
 
-    // Disconnect handling
-    socket.on("disconnect", () => {
-      const userId = Array.from(users.entries())
-        .find(([_, data]) => data.socketId === socket.id)?.[0];
-
-      if (userId === adminId) {
-        adminId = null;
+    // Handle user disconnection
+    socket.on('disconnect', () => {
+      if (socket.id === adminSocketId) {
+        console.log('Admin disconnected');
+        adminSocketId = null;
+      } else if (onlineUsers.has(socket.id)) {
+        const userId = onlineUsers.get(socket.id);
+        onlineUsers.delete(socket.id);
+        console.log(`User (${userId}) disconnected`);
       }
-
-      users.delete(userId);
-      io.emit("userUpdate", {
-        admin: adminId ? users.get(adminId) : null,
-        agents: Array.from(users.values()).filter((u) => u.role === "agent")
-      });
     });
   });
 };
+
+// Start the server
+server.listen(4001, () => {
+  console.log('Socket.io server running on port 4001');
+});
 
 module.exports = socketSetUp;
