@@ -216,86 +216,104 @@ const toogleProduct = async(req, res)=>{
     }
 }
 
-const getOrders = async(req, res) =>{
-  try{
+const getOrders = async(req, res) => {
+  try {
     let orders = await Orders.aggregate([
-        // Existing lookups for user and shipping address
-        {
-          $lookup: {
-            from: "users",
-            localField: "userId",
-            foreignField: "_id",
-            as: 'user'
-          }
-        },
-        {
-          $unwind: "$user"
-        },
-        {
-          $lookup: {
-            from: "addresses",
-            localField: "shippingAddress",
-            foreignField: "_id",
-            as: 'shippingAddress'
-          }
-        },
-        {
-          $unwind: "$shippingAddress"
-        },
-        // New lookup for products
-        {
-          $lookup: {
-            from: "products",
-            let: { items: "$items" },
-            pipeline: [
-              {
-                $match: {
-                  $expr: {
-                    $in: ["$_id", "$$items.productId"]
-                  }
+      // Lookup for user details
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: 'user'
+        }
+      },
+      {
+        $unwind: "$user"
+      },
+      // Lookup for shipping address
+      {
+        $lookup: {
+          from: "addresses",
+          localField: "shippingAddress",
+          foreignField: "_id",
+          as: 'shippingAddress'
+        }
+      },
+      {
+        $unwind: "$shippingAddress"
+      },
+      // Lookup for product details
+      {
+        $lookup: {
+          from: "products",
+          let: { orderItems: "$items" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $in: ["$_id", {
+                    $map: {
+                      input: "$$orderItems",
+                      as: "item",
+                      in: "$$item.productId"
+                    }
+                  }]
                 }
               }
-            ],
-            as: "productDetails"
-          }
-        },
-        // Modify items array to include product details
-        {
-          $addFields: {
-            "items": {
-              $map: {
-                input: "$items",
-                as: "item",
-                in: {
-                  $mergeObjects: [
-                    "$$item",
-                    {
-                      productDetails: {
-                        $arrayElemAt: [
-                          {
-                            $filter: {
-                              input: "$productDetails",
-                              cond: { $eq: ["$$this._id", "$$item.productId"] }
-                            }
-                          },
-                          0
-                        ]
-                      }
+            },
+            {
+              $project: {
+                _id: 1,
+                name: 1,
+                description: 1,
+                images: 1,
+                category: 1,
+                stock: 1
+                // Explicitly NOT including price fields
+              }
+            }
+          ],
+          as: "productDetails"
+        }
+      },
+      // Combine order items with product details while preserving original price
+      {
+        $addFields: {
+          "items": {
+            $map: {
+              input: "$items",
+              as: "item",
+              in: {
+                $mergeObjects: [
+                  "$$item",
+                  {
+                    productDetails: {
+                      $arrayElemAt: [
+                        {
+                          $filter: {
+                            input: "$productDetails",
+                            cond: { $eq: ["$$this._id", "$$item.productId"] }
+                          }
+                        },
+                        0
+                      ]
                     }
-                  ]
-                }
+                  }
+                ]
               }
             }
           }
         }
+      }
     ]);
-    console.log(orders)
-    res.status(200).json(orders.reverse())
+
+    res.status(200).json(orders.reverse());
+  } catch(error) {
+    console.error('Error in getOrders:', error);
+    res.status(500).json('server error');
   }
-  catch(error){
-      res.status(500).json('server error')
-  }
-}
+};
 
 const updateOrderStatus = async (req, res) => {
   const { status } = req.query;
@@ -355,6 +373,76 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
+const handleReturnRequest = async (req, res) => {
+  try {
+    const { orderId, productId, action } = req.body;
+
+    if (!orderId || !productId || !action) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields'
+      });
+    }
+
+    if (!['accept', 'decline'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid action'
+      });
+    }
+
+    const order = await Orders.findById(orderId);
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: 'Order not found'
+      });
+    }
+
+    // Find the specific item in the order
+    const itemIndex = order.items.findIndex(
+      item => item.productId.toString() === productId
+    );
+
+    if (itemIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        message: 'Product not found in order'
+      });
+    }
+
+    // Check if the item is in return-request status
+    if (order.items[itemIndex].status !== 'return-request') {
+      return res.status(400).json({
+        success: false,
+        message: 'Item is not in return request status'
+      });
+    }
+
+    // Update the item status based on action
+    const newStatus = action === 'accept' ? 'Returned' : 'Return Declined';
+    order.items[itemIndex].status = newStatus;
+
+    await order.save();
+
+    // Send notification to customer about return status
+    // await sendReturnStatusNotification(order.user, productId, newStatus);
+
+    return res.status(200).json({
+      success: true,
+      message: `Return request ${action}ed successfully`
+    });
+
+  } catch (error) {
+    console.error('Error handling return request:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
+};
+
 
 
 const changeStock = async(req, res) =>{
@@ -386,5 +474,6 @@ module.exports = {
   toogleProduct,
   getOrders,
   updateOrderStatus,
-  changeStock
+  changeStock,
+  handleReturnRequest
 }

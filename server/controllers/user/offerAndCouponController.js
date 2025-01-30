@@ -42,9 +42,14 @@ const checkApplyCode = async (req, res) => {
     }
 
     // Check if the total amount meets the minimum purchase requirement
-    if (totalPrice < coupon.minimumOrderValue) {
+    if (coupon.discountType === 'fixed' && totalPrice < coupon.minimumOrderValue) {
       return res.status(400).json({
         message: `Minimum purchase amount for this coupon is ${coupon.minimumOrderValue}.`,
+      });
+    }
+    if (coupon.discountType === 'percentage' && totalPrice > coupon.maximumOrderValue) {
+      return res.status(400).json({
+        message: `maximum purchase amount for this coupon is ${coupon.maximumOrderValue}.`,
       });
     }
 

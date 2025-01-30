@@ -14,11 +14,11 @@ export const adminSlice = createSlice({
 
         SaveAdmin: ( state, action )=>{
         
-            return { ...state, token: action.payload, isAuthenticated: true}
+            return { ...state, token: action.payload, isAuthenticated: true, email: 'sajjadmuhammed227@gmail.com'}
         },
 
         logoutAdmin:(state, action)=>{
-            return {...state, admin: null, token: null}
+            return {...state, admin: null, token: null, email: null}
         },
         
 

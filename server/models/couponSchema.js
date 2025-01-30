@@ -20,6 +20,10 @@ const couponSchema = new mongoose.Schema({
     type: Number, // Minimum order value required to use the coupon
     default: 0,
   },
+  maximumOrderValue: {
+    type: Number, // maximum order value required to use the coupon
+    default: 0,
+  },
   startDate: {
     type: Date,
     required: true,
