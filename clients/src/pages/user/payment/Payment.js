@@ -82,6 +82,9 @@ const CheckoutPage = () => {
       throw error;
     }
   };
+
+
+  
   console.log(orders)
   // Check product stock
   const checkProduct = async () => {
@@ -122,6 +125,7 @@ const CheckoutPage = () => {
       toast.error(error.response?.data?.message || 'Failed to apply coupon');
     }
   };
+
 
   // Handle checkout process
   const handleCheckout = async (shippingCharge) => {
@@ -167,7 +171,7 @@ const CheckoutPage = () => {
       }
     } catch (error) {
       console.error('Error during checkout:', error);
-      toast.error(error.response?.data?.message || 'Error during checkout');
+      toast.error(error.response?.data?.message || error.response?.data);
     }
   };
 
@@ -204,7 +208,7 @@ const CheckoutPage = () => {
   // Navigate to order completion
   const navigateToOrderComplete = (data) => {
     navigate('/orderCompleted', {
-      state: { response: JSON.stringify(data) }
+      state: { response: JSON.stringify({...data, items: orders.items}) }
     });
   };
 

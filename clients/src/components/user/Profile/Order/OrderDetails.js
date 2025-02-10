@@ -1,3 +1,4 @@
+// OrderDetails.js
 import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { userAxiosInstance } from "../../../../redux/constants/AxiosInstance";
@@ -11,8 +12,7 @@ import { useRazorpay } from "react-razorpay";
 import { useNavigate } from "react-router-dom";
 import ReturnModal from '../Order/ReturnModal';
 
-const OrderDetails = ({ orders, refresh }) => {
-  // State management
+const OrderDetails = ({ orders, refresh, onBack }) => {
   const [order, setOrder] = useState({});
   const [addressDetails, setAddressDetails] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
@@ -21,7 +21,6 @@ const OrderDetails = ({ orders, refresh }) => {
   const { Razorpay } = useRazorpay();
   const navigate = useNavigate();
 
-  // Utility functions
   const getStatusColor = (status) => {
     const statusColors = {
       'pending': 'bg-yellow-100 text-yellow-800',
@@ -44,38 +43,45 @@ const OrderDetails = ({ orders, refresh }) => {
     });
   };
 
-  // API Handlers
   const fetchAddress = async () => {
     try {
-      let response = await fetchData('singleAddress', { addressId: orders.shippingAddress });
-      orders.shippingAddress = response;
+      const response = await fetchData('singleAddress', { addressId: orders.shippingAddress });
+      const updatedOrder = { ...orders, shippingAddress: response };
+      setOrder(updatedOrder);
     } catch (error) {
-      console.log(error);
-      toast.error("Try again");
+      console.error('Error fetching address:', error);
+      toast.error("Failed to load address details");
     }
   };
 
   const handleCancelOrder = async (product, portion) => {
-    if (!product) return;
-
-    let { userId, productId } = product;
-    let orderId = order._id;
     try {
-      let response = await userAxiosInstance.delete('/order', {
-        params: {
-          userId,
-          productId,
-          orderId,
-          portion
-        }
-      });
-      toast.success(response.data?.message ?? response.data);
-      if (typeof refresh === 'function') {
-        refresh();
+      let response;
+      if (portion === 'FULL') {
+        response = await userAxiosInstance.delete('/order', {
+          params: { orderId: order._id }
+        });
+      } else {
+        response = await userAxiosInstance.delete('/order', {
+          params: {
+            userId: product.userId,
+            productId: product.productId,
+            orderId: order._id,
+            portion
+          }
+        });
+      }
+
+      toast.success(response.data?.message ?? "Order cancelled successfully");
+      setCancelConfirm(false);
+      await refresh();
+
+      if (portion === 'FULL') {
+        onBack();
       }
     } catch (error) {
-      console.log(error);
-      toast.error('Try again later');
+      console.error('Error cancelling order:', error);
+      toast.error(error.response?.data?.message ?? 'Failed to cancel order');
     }
   };
 
@@ -89,38 +95,40 @@ const OrderDetails = ({ orders, refresh }) => {
       });
       
       toast.success(response.data?.message ?? "Return request submitted successfully");
-      if (typeof refresh === 'function') {
-        refresh();
-      }
+      await refresh();
     } catch (error) {
-      console.error(error);
+      console.error('Error submitting return request:', error);
       toast.error(error.response?.data?.message ?? "Failed to submit return request");
     }
   };
 
   const handleRazorpayPayment = async () => {
-    handlePayment(Razorpay, async () => {
-      try {
-        await userAxiosInstance.put('/order', { _id: orders._id, paymentStatus: 'success' });
-        navigate('/orderCompleted', { state: { response: JSON.stringify(orders) } });
-      } catch (error) {
-        console.error('Error during payment confirmation:', error);
-        toast.error('Payment failed. Try again.');
-      }
-    }, ()=>{
-      console.log('error');
-      toast.error('payment failed you can place the payment in the order');
-      setTimeout(()=>{
-        navigate('/profile');
-      },2000);
-    }, orders.totalAmount.toFixed());
+    handlePayment(
+      Razorpay,
+      async () => {
+        try {
+          await userAxiosInstance.put('/order', {
+            _id: orders._id,
+            paymentStatus: 'success'
+          });
+          await refresh();
+          navigate('/orderCompleted', { state: { response: JSON.stringify(orders) } });
+        } catch (error) {
+          console.error('Error during payment confirmation:', error);
+          toast.error('Payment failed. Please try again.');
+        }
+      },
+      () => {
+        toast.error('Payment failed. You can complete the payment in the order details.');
+        setTimeout(() => navigate('/profile'), 2000);
+      },
+      orders.totalAmount.toFixed()
+    );
   };
 
-  // Effects
   useEffect(() => {
     if (orders) {
       fetchAddress();
-      setOrder(orders);
     }
   }, [orders]);
 
@@ -128,10 +136,19 @@ const OrderDetails = ({ orders, refresh }) => {
 
   return (
     <>
-      <h1 className="text-2xl font-bold mb-6">My Orders</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Order Details</h1>
+        <button 
+          onClick={onBack}
+          className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+        >
+          ← Back to Orders
+        </button>
+      </div>
+
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="space-y-4">
-          <div key={order._id} className="bg-white rounded-lg shadow-sm border p-6">
+          <div className="bg-white rounded-lg shadow-sm border p-6">
             {/* Order Header */}
             <div className="flex justify-between items-start mb-4">
               <div>
@@ -153,12 +170,12 @@ const OrderDetails = ({ orders, refresh }) => {
 
             {/* Order Items */}
             <div className="space-y-4">
-              {order && order.items.map((item, index) => (
+              {order.items.map((item, index) => (
                 <div key={index} className="flex items-start gap-4 p-4 bg-gray-50 rounded-lg">
                   <div className="w-16 h-16 bg-gray-200 rounded">
                     <img
                       src={item.productId.images[0]}
-                      alt="Product"
+                      alt={item.productId.name}
                       className="w-full h-full object-cover rounded"
                     />
                   </div>
@@ -183,8 +200,8 @@ const OrderDetails = ({ orders, refresh }) => {
                       <div className="flex gap-2">
                         {item.status === 'Pending' && (
                           <button 
-                            className="h-[40px] rounded-md px-7 bg-red-200 text-red-700"
-                            onClick={() => handleCancelOrder(item, "SINGLE")}
+                            className="h-10 rounded-md px-7 bg-red-200 text-red-700 hover:bg-red-300"
+                            onClick={() => setCancelConfirm({id: item, portion: "SINGLE"})}
                           >
                             Cancel
                           </button>
@@ -195,12 +212,11 @@ const OrderDetails = ({ orders, refresh }) => {
                               setSelectedItem(item);
                               setReturnModal(true);
                             }}
-                            className="h-[40px] rounded-md px-7 bg-yellow-200 text-yellow-700"
+                            className="h-10 rounded-md px-7 bg-yellow-200 text-yellow-700 hover:bg-yellow-300"
                           >
                             Return
                           </button>
                         )}
-                         
                       </div>
                     </div>
                   </div>
@@ -225,8 +241,11 @@ const OrderDetails = ({ orders, refresh }) => {
                 <Package size={20} className="text-gray-400" />
                 <div>
                   <p className="text-sm font-medium">Shipping Address</p>
-                  <p className="text-sm text-gray-600 cursor-pointer" onClick={() => setAddressDetails(true)}>
-                    Delivery details here
+                  <p 
+                    className="text-sm text-gray-600 cursor-pointer hover:text-gray-800"
+                    onClick={() => setAddressDetails(true)}
+                  >
+                    View delivery details
                   </p>
                 </div>
               </div>
@@ -243,7 +262,7 @@ const OrderDetails = ({ orders, refresh }) => {
             {/* Payment Button */}
             {order.paymentStatus === 'pending' && (
               <button 
-                onClick={() => handleRazorpayPayment(order)}
+                onClick={handleRazorpayPayment}
                 className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
               >
                 Pay Now with Razorpay
@@ -252,12 +271,14 @@ const OrderDetails = ({ orders, refresh }) => {
           </div>
           
           {/* Cancel Full Order Button */}
-          <button 
-            className={`h-[50px] px-4 bg-red-300 ${order.orderStatus !== "pending" && 'hidden'}`} 
-            onClick={() => setCancelConfirm({id: 'null', portion: 'FULL'})}
-          >
-            Cancel Order
-          </button>
+          {order.orderStatus === "pending" && (
+            <button 
+              className="w-full h-12 px-4 bg-red-300 text-red-700 rounded-md hover:bg-red-400"
+              onClick={() => setCancelConfirm({id: null, portion: 'FULL'})}
+            >
+              Cancel Entire Order
+            </button>
+          )}
         </div>
       </div>
 
@@ -265,7 +286,7 @@ const OrderDetails = ({ orders, refresh }) => {
       <OrderAddress
         isOpen={addressDetails}
         onClose={() => setAddressDetails(false)}
-        addressData={orders.shippingAddress}
+        addressData={order.shippingAddress}
       />
 
       <ReturnModal
@@ -283,7 +304,7 @@ const OrderDetails = ({ orders, refresh }) => {
 
       <Confirmation
         buttonText="Cancel Order"
-        data="Are you sure you want to delete the order?"
+        data="Are you sure you want to cancel this order?"
         isOpen={cancelConfirm}
         onClose={() => setCancelConfirm(false)}
         onConfirm={() => handleCancelOrder(cancelConfirm.id, cancelConfirm.portion)}
@@ -292,4 +313,4 @@ const OrderDetails = ({ orders, refresh }) => {
   );
 };
 
-export default OrderDetails;
+export default OrderDetails

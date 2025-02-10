@@ -33,6 +33,7 @@ const handlePayment = async (Razorpay, onSuccess, onFailure, amount) => {
     } catch (error) {
         console.error("Payment error:", error);
         alert("Payment initialization failed.");
+        onFailure()
     }
 };
 
