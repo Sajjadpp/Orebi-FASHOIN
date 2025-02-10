@@ -278,7 +278,7 @@ const listProductByFilter =  async (req, res) => {
         const searchQuery = req.query.search || '';
         
         // Build query
-        const query = {};
+        const query = {status: true};
         
         // Add category filter
         if (category !== 'all') {

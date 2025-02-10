@@ -134,7 +134,7 @@ const EditProducts = ({isOpen, product, onClose}) => {
   
     let isValidate = validate(formData, imagePreviews, setErrors);
   
-    if (!isValidate) return toast.error("Invalid");
+    if (!isValidate) return toast.error("current price is greater than the normal price");
   
     // Check if at least one size has stock
     const hasStock = stockItems.some(item => item.quantity > 0);

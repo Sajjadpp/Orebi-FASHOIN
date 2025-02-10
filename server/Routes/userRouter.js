@@ -8,7 +8,7 @@ const { addAddress, listAddress, deleteAddress, sendOrderMail, listOrder, editAd
 const { checkProductAvailability, forgetPasswordOtp } = require("../controllers/user/AuthController");
 const { authenticateToken, isBlocked, isCapableToCod } = require("../Auth/userAuth");
 const { verifyToken } = require("../services/jwt");
-const { razorpayToken, editOrder, cancelOrder, getWallet, addOrder } = require("../controllers/user/OrderController");
+const { razorpayToken, editOrder, cancelOrder, getWallet, addOrder, returnOrder } = require("../controllers/user/OrderController");
 const { checkApplyCode, getCoupons } = require("../controllers/user/offerAndCouponController");
 
 user.post("/exist", emailExist)
@@ -53,7 +53,11 @@ user.get('/sendOrderMail', isBlocked, sendOrderMail)
 user.get('/order', authenticateToken, isBlocked, listOrder)
 user.delete("/order", authenticateToken, isBlocked, cancelOrder)
 user.post("/create-order", authenticateToken, isBlocked, razorpayToken)
-user.put("/order", authenticateToken, isBlocked, editOrder)
+user.put("/order", authenticateToken, isBlocked, editOrder);
+user.put("/order/return", authenticateToken, isBlocked, returnOrder);
+
+
+
 
 user.post('/forgot-password', isBlocked, forgetPasswordOtp);
 user.post('/reset-password', isBlocked, resetPassword);

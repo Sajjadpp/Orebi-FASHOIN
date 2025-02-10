@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Lock, Mail, User } from 'lucide-react';
+import { Lock, Mail, User, Ticket } from 'lucide-react';
 import Input from "../Input"
 import validateForm, { isExist, validatePassword } from './validation';
 import { useDispatch, useSelector } from 'react-redux';
@@ -8,16 +8,14 @@ import { useNavigate } from 'react-router-dom';
 import PasswordStrengthIndicator from '../../../../components/user/Account/PasswordStrength';
 import toast,{Toaster} from 'react-hot-toast'
 import GoogleAuthButton from '../../../../components/user/GoogleAuth/GoogleButton';
-// Input Component
-
 
 export default function SignUpPage() {
-  // Form state
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
     confirmPassword: '',
+    referralCode: '', // Added referral code field
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -28,11 +26,11 @@ export default function SignUpPage() {
     name: null,
     cPassword: null,
     userExist: null,
+    referralCode: null, // Added referral code message
     all: false,
   });
   const [passwordStrength, setPasswordStrength] = useState('');
 
-  // Validation functions
   const dispatch = useDispatch()
   const navigate = useNavigate()
   const user = useSelector(state=> state.userReducer.user)
@@ -53,12 +51,10 @@ export default function SignUpPage() {
     }
   },[user])
 
-  // Real-time validation
   useEffect(() => {
     const errors = validateForm(formData);
     setMessage(errors);
     
-    // Update password strength
     if (formData.password) {
       setPasswordStrength(getPasswordStrength(formData.password));
     }
@@ -76,13 +72,11 @@ export default function SignUpPage() {
     const errors = await validateForm(formData);
     console.log(errors)
     if (errors.all && acceptTerms) {
-      // Proceed with form submission
       console.log('Form submitted:', formData);
       
       dispatch(SaveUser({...formData, token: null}));
       
       navigate("/verify")
-      // Add your API call here
     } else {
       setMessage(errors);
       console.log(errors.userExist)
@@ -90,12 +84,8 @@ export default function SignUpPage() {
     }
   };
 
-  
-
   return (
     <div className="min-h-screen bg-[#f5f5f3] flex items-center justify-center p-4">
-      
-
       <div className="max-w-md w-full space-y-8 bg-white p-8 shadow-lg">
         <div className="text-center">
           <h2 className="text-4xl font-bold text-gray-900 mb-2">Create Account</h2>
@@ -155,6 +145,17 @@ export default function SignUpPage() {
             showPassword={showConfirmPassword}
             onTogglePassword={() => setShowConfirmPassword(!showConfirmPassword)}
             color={message.cPassword ? "red" : "black"}
+          />
+
+          {/* New Referral Code Input */}
+          <Input
+            id="referralCode"
+            label={message.referralCode ?? "Referral Code (Optional)"}
+            placeholder="Enter referral code if you have one"
+            icon={Ticket}
+            value={formData.referralCode}
+            onChange={handleChange('referralCode')}
+            color={message.referralCode ? "red" : "black"}
           />
 
           <div className="flex items-start">

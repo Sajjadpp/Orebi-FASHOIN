@@ -1,74 +1,142 @@
 const Offer = require('../../models/offerSchema')
 const Product = require('../../models/ProductSchema')
-const Coupons = require('../../models/couponSchema')
+const Coupons = require('../../models/couponSchema');
+const Category = require('../../models/CategorySchema')
 
 // offer 
 const addOffer = async (req, res) => {
-    let data = { ...req.body, applicableType: req.body.type };
+  try {
+      let data = { ...req.body };
+      const discountDecimal = data.discountPercentage / 100;
 
-    console.log(data);
-
-    try {
-        if (data.applicableType === 'product') {
-            const discountDecimal = data.discountPercentage / 100; // Convert discount percentage to decimal (e.g., 80 -> 0.80)
-
-            const product = await Product.findOneAndUpdate(
-                { _id: req.body.applicableId }, // Find the product by ID
-                [
+      if (data.type === 'product') {
+          // Handle single product offer
+          await Product.findOneAndUpdate(
+              { _id: data.applicableId },
+              [
                   {
-                    $set: {
-                      currentPrice: {
-                        $round: [ // Round the calculated price to the nearest integer
-                          {
-                            $subtract: [
-                              { $toDouble: "$regularPrice" }, // Convert regularPrice to number
-                              { $multiply: [ { $toDouble: "$regularPrice" }, discountDecimal ] } // Apply discount
-                            ],
-                          },
-                          0, // Rounds to the nearest integer
-                        ],
-                      },
-                    },
+                      $set: {
+                          currentPrice: {
+                              $round: [
+                                  {
+                                      $subtract: [
+                                          { $toDouble: "$regularPrice" },
+                                          {
+                                              $multiply: [
+                                                  { $toDouble: "$regularPrice" },
+                                                  discountDecimal
+                                              ]
+                                          }
+                                      ]
+                                  },
+                                  0
+                              ]
+                          }
+                      }
                   },
-                ],
-                { new: true } // Return the updated document
-            );
-        } else if (data.applicableType === 'category') {
-            // Update price for all products in the category
-            const discountDecimal = data.discountPercentage / 100; // Convert discount percentage to decimal (e.g., 80 -> 0.80)
-
-            const updatedProducts = await Product.updateMany(
-                { category: req.body.applicableId }, // Find products by category ID
-                [
                   {
-                    $set: {
-                      currentPrice: {
-                        $round: [ // Round the calculated price to the nearest integer
-                          {
-                            $subtract: [
-                              { $toDouble: "$regularPrice" }, // Convert regularPrice to number
-                              { $multiply: [ { $toDouble: "$regularPrice" }, discountDecimal ] } // Apply discount
-                            ],
-                          },
-                          0, // Rounds to the nearest integer
-                        ],
+                      // Ensure currentPrice doesn't exceed regularPrice
+                      $set: {
+                          currentPrice: {
+                              $min: ["$currentPrice", "$regularPrice"]
+                          }
+                      }
+                  }
+              ],
+              { new: true }
+          );
+      } else if (data.type === 'category') {
+          // Find the target category
+          console.log(data.applicableId,'data.applicableId')
+          const targetCategory = await Category.findById(data.applicableId);
+          
+          if (!targetCategory) {
+              return res.status(404).json('Category not found');
+          }
+
+          let productsToUpdate = [];
+
+          if (targetCategory.type === '0' && !targetCategory.parentCategory) {
+              // If it's a parent category, get all child categories
+              const childCategories = await Category.find({ 
+                  parentCategory: targetCategory._id 
+              });
+              
+              // Get products from both parent and child categories
+              productsToUpdate = await Product.find({
+                  category: {
+                      $in: [targetCategory._id, ...childCategories.map(cat => cat.name)]
+                  }
+              });
+          } else {
+              // If it's a child category or regular category
+              productsToUpdate = await Product.find({
+                  category: targetCategory.name
+              });
+          }
+          console.log(productsToUpdate.length,"length")
+          // Update each product's price
+          if (productsToUpdate.length > 0) {
+            productsToUpdate.map(p =>console.log(p._id,"p id"))
+              await Product.updateMany(
+                  { _id: { $in: productsToUpdate.map(p => p._id) } },
+                  [
+                      {
+                          $set: {
+                              currentPrice: {
+                                  $round: [
+                                      {
+                                          $subtract: [
+                                              { $toDouble: "$regularPrice" },
+                                              {
+                                                  $multiply: [
+                                                      { $toDouble: "$regularPrice" },
+                                                      discountDecimal
+                                                  ]
+                                              }
+                                          ]
+                                      },
+                                      0
+                                  ]
+                              }
+                          }
                       },
-                    },
-                  },
-                ]
-            );
-        }
+                      {
+                          // Ensure currentPrice doesn't exceed regularPrice
+                          $set: {
+                              currentPrice: {
+                                  $min: ["$currentPrice", "$regularPrice"]
+                              }
+                          }
+                      }
+                  ]
+              );
+          }
+      }
 
-        // Save the new offer
-        let newOffer = new Offer(data);
-        await newOffer.save();
+      // Save the offer with applicableType
+      const newOffer = new Offer({
+          title: data.title,
+          description: data.description,
+          type: data.type,
+          applicableType: data.type,
+          applicableId: data.applicableId,
+          applicableName: data.applicableName,
+          discountPercentage: data.discountPercentage,
+          validFrom: data.validFrom,
+          validUntil: data.validUntil,
+          usageLimitPerUser: data.usageLimitPerUser
+      });
 
-        res.json('New offer was added');
-    } catch (error) {
-        console.log(error);
-        res.status(500).json('Server error');
-    }
+      await newOffer.save();
+      res.json('New offer was added successfully');
+
+  } catch (error) {
+      console.error('Error in addOffer:', error);
+      res.status(500).json('Server error occurred while adding offer');
+  }
 };
+
 
 const getOffer = async(req, res) =>{
     try{

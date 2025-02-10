@@ -1,10 +1,10 @@
 const express = require('express');
-const { adminLogin, addCategory, listCategory, changeStock , getOrders, editCategory, addProduct, productList, editProduct, listAll, listAllUsers, toogleBlock, toogleProduct, updateOrderStatus } = require('../controllers/admin/adminControllers');
+const { adminLogin, addCategory, listCategory, changeStock , getOrders, editCategory, addProduct, productList, editProduct, listAll, listAllUsers, toogleBlock, toogleProduct, updateOrderStatus, handleReturnRequest } = require('../controllers/admin/adminControllers');
 const admin = express.Router();
 const upload = require("../services/cloudinary");
 const { isAuth } = require('../Auth/adminAuth');
 const { getOffer, addOffer, deleteOffer, listCoupon, addCoupon, deleteCoupon, editCoupon } = require('../controllers/admin/offerAndCouponController');
-const { getSalesReport } = require('../controllers/admin/salesReport');
+const { getSalesReport, getTopCategoriesAndProducts } = require('../controllers/admin/salesReport');
 
 admin.post("/login", adminLogin)
 
@@ -30,8 +30,8 @@ admin.patch("/toogleBlock", isAuth, toogleBlock)
 
 
 admin.get('/orders', isAuth, getOrders)
-
 admin.patch('/orders',isAuth, updateOrderStatus)
+admin.patch('/orders/return-request',isAuth, handleReturnRequest)
 
 
 admin.get('/offer', isAuth, getOffer);
@@ -48,4 +48,7 @@ admin.delete('/coupon/:id', isAuth, deleteCoupon);
 // sales report 
 admin.get('/sales-report', isAuth, getSalesReport)
 
-module.exports = admin
+
+admin.get('/top-category', getTopCategoriesAndProducts)
+
+module.exports = admin 

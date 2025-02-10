@@ -6,6 +6,7 @@ const Product = require("../../models/ProductSchema")
 const Users = require("../../models/userSchema");
 const Orders = require('../../models/ordersSchema')
 const { generateToken } = require("../../services/jwt");
+const Wallet = require('../../models/walletSchema')
 
 const adminLogin= async(req, res)=>{
 
@@ -419,13 +420,37 @@ const handleReturnRequest = async (req, res) => {
         message: 'Item is not in return request status'
       });
     }
+    let userId = order.userId;
 
     // Update the item status based on action
     const newStatus = action === 'accept' ? 'Returned' : 'Return Declined';
     order.items[itemIndex].status = newStatus;
 
+    if(order.items.every(item => item.status === newStatus)){
+      order.orderStatus = newStatus
+    }
+
     await order.save();
 
+    if(newStatus === "Returned"){
+      let userWallet = await Wallet.findOne({user: userId});
+      if(!userWallet){
+        userWallet = new Wallet({
+          user: userId,
+          balance: 0
+        })
+      }
+      userWallet.balance += order.items[itemIndex].total;
+      userWallet.transactions.unshift({
+        transactionId: new mongoose.Types.ObjectId(),
+        type: 'credit',
+        amount: order.items[itemIndex].total,
+        description: 'by returning a product ',
+      })
+      
+
+      await userWallet.save()
+    }
     // Send notification to customer about return status
     // await sendReturnStatusNotification(order.user, productId, newStatus);
 

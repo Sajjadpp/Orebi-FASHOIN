@@ -9,6 +9,7 @@ const AddCouponPage = () => {
         discountType: 'percentage',
         discountValue: '',
         minimumOrderValue: '',
+        maximumOrderValue: '',
         startDate: '',
         endDate: '',
         usageLimit: '',
@@ -31,6 +32,14 @@ const AddCouponPage = () => {
         if (formData.discountType === 'percentage' && formData.discountValue > 100) {
             newErrors.discountValue = 'Percentage cannot be greater than 100';
         }
+
+        if (formData.discountType === 'fixed' && !formData.minimumOrderValue) {
+            newErrors.minimumOrderValue = 'Minimum order value is required for percentage discount';
+        }
+
+        if (formData.discountType === 'percentage' && !formData.maximumOrderValue) {
+            newErrors.maximumOrderValue = 'Maximum order value is required';
+        }
         
         if (new Date(formData.startDate) > new Date(formData.endDate)) {
             newErrors.endDate = 'End date must be after start date';
@@ -50,7 +59,6 @@ const AddCouponPage = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('working e.prevernt default')
         if (validateForm()) {
             try {
                 await adminAxiosInstance.post('/coupon', formData);
@@ -79,7 +87,7 @@ const AddCouponPage = () => {
                             </button>
                         </div>
                         <h1 className="text-2xl font-bold text-gray-900">Add New Coupon</h1>
-                        <div className="w-24"></div> {/* Spacer for center alignment */}
+                        <div className="w-24"></div>
                     </div>
                 </div>
             </div>
@@ -141,19 +149,47 @@ const AddCouponPage = () => {
                             </div>
                         </div>
 
-                        <div>
+                        {formData.discountType === 'fixed' && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Minimum Order Value*
+                                </label>
+                                <input
+                                    type="number"
+                                    name="minimumOrderValue"
+                                    value={formData.minimumOrderValue}
+                                    onChange={handleInputChange}
+                                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none
+                                        ${errors.minimumOrderValue ? 'border-red-500' : 'border-gray-300'}`}
+                                    placeholder="e.g., 100"
+                                />
+                                {errors.minimumOrderValue && (
+                                    <p className="mt-1 text-sm text-red-500">{errors.minimumOrderValue}</p>
+                                )}
+                            </div>
+                        )}
+
+                        {
+                            formData.discountType === "percentage" &&
+
+                            <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Minimum Order Value
+                                Maximum Order Value*
                             </label>
                             <input
                                 type="number"
-                                name="minimumOrderValue"
-                                value={formData.minimumOrderValue}
+                                name="maximumOrderValue"
+                                value={formData.maximumOrderValue}
                                 onChange={handleInputChange}
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                                placeholder="e.g., 100"
+                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none
+                                    ${errors.maximumOrderValue ? 'border-red-500' : 'border-gray-300'}`}
+                                placeholder="e.g., 1000"
                             />
+                            {errors.maximumOrderValue && (
+                                <p className="mt-1 text-sm text-red-500">{errors.maximumOrderValue}</p>
+                            )}
                         </div>
+                        }
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
@@ -207,7 +243,7 @@ const AddCouponPage = () => {
                                 name="status"
                                 checked={formData.status}
                                 onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.checked }))}
-                                className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-blue-500"
+                                className="w-4 h-4 text-blue-500 border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
                             />
                             <label className="text-sm text-gray-700">
                                 Active Coupon

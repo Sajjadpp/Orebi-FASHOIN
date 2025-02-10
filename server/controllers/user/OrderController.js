@@ -54,7 +54,7 @@ const getOrderFormData = (originalData) =>{
         }).flat(),
         shippingCharge: originalData.shippingCharge,
         discountApplied: originalData.discountApplied,
-        totalAmount: originalData.totalAmt,
+        totalAmount: originalData.total,
         shippingAddress: originalData.selectedAddress,
         paymentMethod: originalData.selectedPayment, // Example payment method
         paymentStatus: "pending", // Default
@@ -152,12 +152,12 @@ const addOrder = async (req, res) => {
 
 const editOrder = async(req, res) =>{
     try{
-        await Orders.findByIdAndUpdate(req.body._id, {$set: {paymentStatus: req.body.paymentStatus}})
-        res.json('working')
+      await Orders.findByIdAndUpdate(req.body._id, {$set: {paymentStatus: req.body.paymentStatus}})
+      res.json('working')
     }
     catch(error){
-        console.log(error);
-        res.status(500).json('try again later');
+      console.log(error);
+      res.status(500).json('try again later');
     }
 }
 
@@ -224,8 +224,9 @@ const cancelOrder = async (req, res) => {
       }
   
       // Cancel Partial Order
+      console.log(orders.items, productId)
       const cancelProduct = orders.items.find((item) =>
-        item.productId.equals(productId)
+        item.productId.equals(productId._id) 
       );
       console.log(cancelProduct);
       if (!cancelProduct || cancelProduct.status === "Cancelled") {
@@ -275,7 +276,27 @@ const cancelOrder = async (req, res) => {
       console.error("Error during cancellation:", error);
       res.status(500).json("Something went wrong");
     }
-  };
+};
+
+const returnOrder = async(req, res) =>{
+  let {orderId, details, reason, productId} = req.body
+  try{
+    let order = await Orders.findOne({_id: orderId});
+    let product = order.items.find(item => item.productId == productId);
+    console.log(product)
+    product.returnDetails.reason = reason;
+    product.returnDetails.details = details;
+    product.status = "return-request"
+    console.log('done');
+    await order.save()
+    res.json({message: "Return request submitted successfully"})
+
+  }
+  catch(error){
+    console.log(error);
+    res.status(500).json({message:'Failed to submit return request'})
+  }
+}
   
   
 
@@ -297,5 +318,6 @@ module.exports ={
     addOrder,
     editOrder,
     cancelOrder,
-    getWallet
+    getWallet,
+    returnOrder
 }
