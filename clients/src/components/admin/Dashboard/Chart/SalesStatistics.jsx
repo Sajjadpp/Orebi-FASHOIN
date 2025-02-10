@@ -1,34 +1,78 @@
-import React from 'react'
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import Card from '../Card/Card';
+import React from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
-const SalesStatistics = () => {
-    const salesData = [
-        { month: 'Jan', sales: 35, values: 28, products: 25 },
-        { month: 'Feb', sales: 20, values: 18, products: 15 },
-        { month: 'Mar', sales: 45, values: 38, products: 35 },
-        { month: 'Apr', sales: 30, values: 25, products: 28 },
-        { month: 'May', sales: 55, values: 48, products: 45 },
-        { month: 'Jun', sales: 40, values: 35, products: 38 },
-      ];
+const SalesCategories = () => {
+  const categoryData = [
+    { name: 'shirt', value: 19, percentage: '57.6' },
+    { name: 'hoodies', value: 12, percentage: '36.4' },
+    { name: 'casual shoe', value: 2, percentage: '6.1' }
+  ];
+
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b'];
+
   return (
-    <Card>
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Sales Statistics</h3>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={salesData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="month" stroke="#64748b" />
-                <YAxis stroke="#64748b" />
-                <Tooltip />
-                <Line type="monotone" dataKey="sales" stroke="#3b82f6" strokeWidth={2} />
-                <Line type="monotone" dataKey="values" stroke="#10b981" strokeWidth={2} />
-                <Line type="monotone" dataKey="products" stroke="#f59e0b" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+    <div className="bg-white rounded-lg shadow-sm p-6">
+      <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        Top Product Categories
+      </h3>
+      <div className="h-[500px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={categoryData}
+              cx="50%"
+              cy="50%"
+              innerRadius={90}
+              outerRadius={200}
+              fill="#8884d8"
+              paddingAngle={1}
+              dataKey="value"
+            >
+              {categoryData.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={COLORS[index % COLORS.length]} 
+                />
+              ))}
+            </Pie>
+            <Tooltip 
+              formatter={(value, name, entry) => [
+                `${value} (${entry.payload.percentage}%)`,
+                name
+              ]}
+              contentStyle={{ 
+                backgroundColor: 'white',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+                padding: '8px'
+              }}
+            />
+            <Legend 
+              verticalAlign="bottom" 
+              height={36}
+              formatter={(value, entry) => (
+                <span className="text-sm text-gray-600">
+                  {value} - {entry.payload.percentage}%
+                </span>
+              )}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="mt-4 grid grid-cols-3 gap-4">
+        {categoryData.map((item, index) => (
+          <div key={item.name} className="text-center">
+            <div className="text-sm font-medium" style={{ color: COLORS[index] }}>
+              {item.name.charAt(0).toUpperCase() + item.name.slice(1)}
+            </div>
+            <div className="text-gray-600">
+              {item.value} ({item.percentage}%)
+            </div>
           </div>
-        </Card>
-  )
-}
+        ))}
+      </div>
+    </div>
+  );
+};
 
-export default SalesStatistics
+export default SalesCategories;

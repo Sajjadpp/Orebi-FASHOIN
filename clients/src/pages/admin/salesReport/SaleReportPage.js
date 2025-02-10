@@ -36,60 +36,60 @@ const SalesReport = () => {
   // Generate report when filter changes
   useEffect(() => {
     fetchSalesData();
-    console.log(salesData)
   }, [dateFilter, customStartDate, customEndDate]);
-
-  // Generate report function (fetches data)
-  const generateReport = () => {
-    console.log('Generating report...');
-    fetchSalesData();
-  };
 
   // Download as PDF
   const downloadAsPDF = () => {
     const doc = new jsPDF();
     doc.text('Sales Report', 20, 10);
     doc.autoTable({
-      head: [['Order ID', 'Customer', 'Date', 'Payment Method', 'Discount']],
+      head: [['Order ID', 'Customer', 'Date', 'Payment Method', 'Discount', 'Total Amount']],
       body: salesData.orders.map(order => [
         order.orderId,
-        order.customer,
-        order.date,
+        order.user.username,
+        formatTimestampToDate(order.date),
         order.paymentMethod,
-        `$${order.discount}`,
+        `₹${order.discount ?? 0}`,
+        `₹${order.totalAmount.toFixed() ?? 0}`,
       ]),
     });
     doc.save('sales_report.pdf');
   };
-  console.log(salesData)
+
   // Download as Excel
   const downloadAsExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(salesData.orders);
+    const ws = XLSX.utils.json_to_sheet(salesData.orders.map(order => ({
+      'Order ID': order.orderId,
+      'Customer': order.user.username,
+      'Date': formatTimestampToDate(order.date),
+      'Payment Method': order.paymentMethod,
+      'Discount': `₹${order.discount ?? 0}`,
+      'Total Amount': `₹${order.totalAmount.toFixed() ?? 0}`,
+    })));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Sales Report');
     XLSX.writeFile(wb, 'sales_report.xlsx');
   };
+
+  // Reusable Download Button Component
+  const DownloadButton = ({ onClick, label, color }) => (
+    <button
+      onClick={onClick}
+      className={`bg-${color}-600 text-white px-4 py-2 rounded flex items-center gap-2`}
+    >
+      <Download size={16} />
+      {label}
+    </button>
+  );
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Sales Report</h1>
-        <div className="space-x-2">
-          <button
-            onClick={downloadAsPDF}
-            className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2"
-          >
-            <Download size={16} />
-            PDF
-          </button>
-          <button
-            onClick={downloadAsExcel}
-            className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2"
-          >
-            <Download size={16} />
-            Excel
-          </button>
+        <div className="flex gap-3">
+          <DownloadButton onClick={downloadAsPDF} label="PDF" color="blue" />
+          <DownloadButton onClick={downloadAsExcel} label="Excel" color="green" />
         </div>
       </div>
 
@@ -135,7 +135,7 @@ const SalesReport = () => {
           )}
 
           <button
-            onClick={generateReport}
+            onClick={fetchSalesData}
             className="bg-blue-600 text-white px-4 py-2 rounded"
           >
             Generate Report
@@ -164,37 +164,25 @@ const SalesReport = () => {
         <table className="min-w-full">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">
-                Order ID
-              </th>
-              <th className="px-6 py-3 text-center text-sm font-medium text-gray-500">
-                Customer
-              </th>
-              <th className="px-6 py-3 text-center text-sm font-medium text-gray-500">
-                Date
-              </th>
-              <th className="px-6 py-3 text-center text-sm font-medium text-gray-500">
-                Payment Method
-              </th>
-              <th className="px-6 py-3 text-center text-sm font-medium text-gray-500">
-                Discount
-              </th>
+              <th className="px-6 py-3 text-left text-sm font-medium text-gray-500">Order ID</th>
+              <th className="px-6 py-3 text-center text-sm font-medium text-gray-500">Customer</th>
+              <th className="px-6 py-3 text-center text-sm font-medium text-gray-500">Date</th>
+              <th className="px-6 py-3 text-center text-sm font-medium text-gray-500">Payment Method</th>
+              <th className="px-6 py-3 text-center text-sm font-medium text-gray-500">Discount</th>
+              <th className="px-6 py-3 text-center text-sm font-medium text-gray-500">Total Amount</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {salesData.orders.map((order) => {
-                console.log(order)
-                return(
-                    <tr key={order.orderId}>
-                        <td className="px-6 py-4 text-sm">{order.orderId}</td>
-                        <td className="px-6 py-4 text-sm text-center">{`${order.user.username}`}</td>
-                        <td className="px-6 py-4 text-sm text-center">{formatTimestampToDate(order.date)}</td>
-                        <td className="px-6 py-4 text-sm text-center">{order.paymentMethod}</td>
-                        <td className="px-6 py-4 text-sm text-center">₹{order.discount ?? 0}</td>
-                    </tr> 
-                )
-              
-            })}
+            {salesData.orders.map((order) => (
+              <tr key={order.orderId}>
+                <td className="px-6 py-4 text-sm">{order.orderId}</td>
+                <td className="px-6 py-4 text-sm text-center">{order.user.username}</td>
+                <td className="px-6 py-4 text-sm text-center">{formatTimestampToDate(order.date)}</td>
+                <td className="px-6 py-4 text-sm text-center">{order.paymentMethod}</td>
+                <td className="px-6 py-4 text-sm text-center">₹{order.discount ?? 0}</td>
+                <td className="px-6 py-4 text-sm text-center">₹{order.totalAmount.toFixed() ?? 0}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>

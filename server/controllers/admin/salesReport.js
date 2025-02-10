@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const Order = require('../../models/ordersSchema'); // Assuming you have an Order model
+const Category = require('../../models/CategorySchema')
+const Product= require('../../models/ProductSchema')
 
 // Fetch sales report
 const getSalesReport = async (req, res) => {
@@ -65,6 +67,7 @@ const getSalesReport = async (req, res) => {
           date: order.createdAt,
           paymentMethod: order.paymentMethod,
           discount: order.discountApplied,
+          totalAmount: order.totalAmount
         })),
       });
     } catch (error) {
@@ -72,8 +75,119 @@ const getSalesReport = async (req, res) => {
       res.status(500).json({ error: 'Internal Server Error' });
     }
 };
-  
+
+
+const getTopCategoriesAndProducts = async(req, res) => {
+  try {
+    const { startDate, endDate } = req.query;
+    
+    // Get all completed orders
+    const orders = await Order.find({
+      orderStatus: { $ne: "pending" },
+      ...(startDate && { createdAt: { $gte: new Date(startDate) } }),
+      ...(endDate && { createdAt: { $lte: new Date(endDate) } })
+    }).exec();
+
+    // Initialize counters
+    const productCount = {};
+    const categoryCount = {};
+
+    // Process orders to count products
+    orders.forEach(order => {
+      order.items.forEach((item) => {
+        // Count products
+        let count = item.stocks.reduce((acc, stock) => acc + stock.quantity, 0);
+        if (item.productId in productCount) {
+          productCount[item.productId] += count;
+        } else {
+          productCount[item.productId] = count;
+        }
+      });
+    });
+
+    // Get product details
+    const productIds = Object.keys(productCount);
+    const products = await Product.find(
+      { _id: { $in: productIds } },
+      { name: 1, category: 1 }
+    );
+
+    // Process products to count categories using category names
+    products.forEach(product => {
+      const count = productCount[product._id];
+      const categoryName = product.category; // Using category name directly
+      if (categoryName in categoryCount) {
+        categoryCount[categoryName] += count;
+      } else {
+        categoryCount[categoryName] = count;
+      }
+    });
+
+    // Format product results
+    let bestProducts = products.map(product => ({
+      _id: product._id,
+      name: product.name,
+      value: productCount[product._id],
+    }));
+
+    // Format category results using the names directly
+    let topCategories = Object.entries(categoryCount).map(([categoryName, value]) => ({
+      name: categoryName,
+      value: value,
+    }));
+
+    // Sort both arrays by value in descending order and limit to top 4
+    bestProducts.sort((a, b) => b.value - a.value);
+    topCategories.sort((a, b) => b.value - a.value);
+
+    bestProducts = bestProducts.slice(0, 4);
+    topCategories = topCategories.slice(0, 4);
+
+    // Add percentage calculations
+    const totalProductSales = bestProducts.reduce((sum, product) => sum + product.value, 0);
+    const totalCategorySales = topCategories.reduce((sum, category) => sum + category.value, 0);
+
+    bestProducts = bestProducts.map(product => ({
+      ...product,
+      percentage: ((product.value / totalProductSales) * 100).toFixed(1)
+    }));
+
+    topCategories = topCategories.map(category => ({
+      ...category,
+      percentage: ((category.value / totalCategorySales) * 100).toFixed(1)
+    }));
+
+    // Calculate summary statistics
+    const summary = {
+      totalOrders: orders.length,
+      totalProductsSold: totalProductSales,
+      totalCategories: Object.keys(categoryCount).length,
+      dateRange: {
+        start: startDate ? new Date(startDate) : null,
+        end: endDate ? new Date(endDate) : null
+      }
+    };
+
+    res.json({
+      success: true,
+      bestProducts,
+      topCategories,
+      summary
+    });
+
+  } catch(error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching top categories and products',
+      error: error.message
+    });
+  }
+};
+
+
 
 module.exports = {
-    getSalesReport
+    getSalesReport,
+    getTopCategoriesAndProducts
 };

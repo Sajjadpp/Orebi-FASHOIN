@@ -15,7 +15,7 @@ export const validatePassword = (password) => {
   };
 };
 
-const validateForm = async({ fullName, email, password, confirmPassword }) => {
+const validateForm = async({ fullName, email, password, confirmPassword, referal }) => {
   const errors = {
     name: null,
     email: null,
@@ -79,5 +79,7 @@ async function isExist(email){
     if(response.data.status && response.data.userExist) return true
     return false
 }
+
+
 
 export default validateForm;
