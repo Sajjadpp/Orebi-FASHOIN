@@ -40,6 +40,10 @@ app.listen(process.env.PORT, ()=>{
     console.log('connected successfuly')
 })
 
+app.get('/', (req, res) =>{
+    console.log('connected to oribi successfully')
+})
+
 socketServer.listen(3009, () => {
     console.log(`Server running on port ${process.env.PORT}`);
 });
@@ -47,4 +51,4 @@ socketServer.listen(3009, () => {
 app.use((req, res, next) => {
     console.log(`Incoming Request: ${req.method} ${req.url}`);
     next();
-  });
+});
