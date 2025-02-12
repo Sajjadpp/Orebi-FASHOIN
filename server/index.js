@@ -42,6 +42,7 @@ app.listen(process.env.PORT, ()=>{
 
 app.get('/', (req, res) =>{
     console.log('connected to oribi successfully')
+    res.send('connected success')
 })
 
 socketServer.listen(3009, () => {
