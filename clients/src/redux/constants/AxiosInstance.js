@@ -5,20 +5,22 @@ import { store } from "../store";
 import { logoutAdmin } from "../slices/adminSlice";
 
 
+const baseurl = 'http//:51.21.38.154:4000'
+
 
 
 let userAxiosInstance = axios.create({
 
-    baseURL: "http://localhost:4000/api/user",
+    baseURL:`${baseurl}/api/user`,
     withCredentials: true
 })
 
 let adminAxiosInstance = axios.create({
-    baseURL: "http://localhost:4000/api/admin",
+    baseURL: `${baseurl}/api/admin`,
     withCredentials: true
 })
 let AuthAxiosInstance = axios.create({
-    baseURL: "http://localhost:4000/api/auth",
+    baseURL: `${baseurl}/api/auth`,
     withCredentials: true
 })
 
