@@ -5,7 +5,7 @@ import { store } from "../store";
 import { logoutAdmin } from "../slices/adminSlice";
 
 
-const baseurl = 'http//:orebi.shop:4000'
+const baseurl = 'https://api.orebi.shop'
 
 
 
